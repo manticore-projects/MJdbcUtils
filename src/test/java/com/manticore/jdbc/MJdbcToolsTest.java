@@ -33,6 +33,18 @@ class MJdbcToolsTest {
     }
 
     @Test
+    void rewriteStatementWithQuotedNamedParameters() throws Exception {
+        HashMap<String, Object> parameters = new HashMap<>();
+        parameters.put("param1", "' or 'A' <> 'B");
+
+        String sqlStr = "select * from table_a where field_a = :param1";
+        String rewrittenSqlStr = MJdbcTools.rewriteStatementWithNamedParameters(sqlStr, parameters);
+        String correctSqlStr = "SELECT * FROM table_a WHERE field_a = ''' or ''A'' <> ''B'";
+
+        Assertions.assertEquals(correctSqlStr, rewrittenSqlStr);
+    }
+
+    @Test
     void rewriteStatementWithNamedParameters() throws Exception {
         Date dateParameterValue = new Date();
 

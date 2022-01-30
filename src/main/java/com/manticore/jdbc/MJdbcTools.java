@@ -100,6 +100,11 @@ public class MJdbcTools {
             return o.toString();
         } else if (o instanceof BigDecimal) {
             return ((BigDecimal) o).toPlainString();
+        } else if (o instanceof String) {
+            String s = (String) o;
+            s = s.replace("'", "''");
+            s = s.replace("&", "' || chr(38) || '");
+            return "'" + s + "'";
         } else {
             return "'" + o + "'";
         }

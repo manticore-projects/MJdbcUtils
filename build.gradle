@@ -16,6 +16,10 @@ repositories {
 dependencies {
     implementation 'com.github.jsqlparser:jsqlparser:4.+'
 
+    // https://mvnrepository.com/artifact/org.apache.commons/commons-collections4
+    implementation 'org.apache.commons:commons-collections4:4.+'
+
+
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.+'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.+'
 }
