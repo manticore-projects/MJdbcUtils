@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id "com.github.hierynomus.license" version "latest.release"
 }
 
 group 'org.example'
@@ -22,8 +23,17 @@ dependencies {
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.+'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.+'
+
+    // https://mvnrepository.com/artifact/com.h2database/h2
+    testImplementation 'com.h2database:h2:2.+'
 }
 
 test {
     useJUnitPlatform()
+}
+
+license {
+    ext.year = Calendar.getInstance().get(Calendar.YEAR)
+    ext.name = 'manticore-projects Co. Ltd.'
+    ext.email = 'support@manticore-projects.com'
 }

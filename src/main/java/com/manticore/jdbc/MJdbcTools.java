@@ -1,3 +1,23 @@
+/**
+ * Copyright (C) 2021 Andreas Reichel <andreas@manticore-projects.com>
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+ *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
 package com.manticore.jdbc;
 
 import net.sf.jsqlparser.JSQLParserException;
@@ -24,23 +44,21 @@ public class MJdbcTools {
             new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 
 
-    public final java.sql.Date getSQLDate(Calendar cal) {
+    public final static java.sql.Date getSQLDate(Calendar cal) {
         return new java.sql.Date(cal.getTimeInMillis());
     }
 
-    public final java.sql.Date getSQLDate(Date d) {
+    public final static java.sql.Date getSQLDate(Date d) {
         return new java.sql.Date(d.getTime());
     }
 
-    public final java.sql.Timestamp getSQLTimestamp(Calendar cal) {
+    public final static java.sql.Timestamp getSQLTimestamp(Calendar cal) {
         return new java.sql.Timestamp(cal.getTimeInMillis());
     }
 
-    public final java.sql.Timestamp getSQLTimestamp(Date d) {
+    public final static java.sql.Timestamp getSQLTimestamp(Date d) {
         return new java.sql.Timestamp(d.getTime());
     }
-
-
 
     private static String getSQLHash(String sqlStr) throws JSQLParserException, NoSuchAlgorithmException {
         MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
