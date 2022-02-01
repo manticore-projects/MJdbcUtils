@@ -42,10 +42,14 @@ import java.util.LinkedList;
 import java.util.Map;
 
 public class MPreparedStatement implements Closeable {
+    private final static int DEFAULT_BATCH_SIZE=24;
     private final PreparedStatement statement;
     private final ParameterMetaData parameterMetaData;
     private final String sqlStr;
     private final CaseInsensitiveMap<String, MNamedParameter> parameters = new CaseInsensitiveMap<>();
+
+    private long recordCount = 0;
+    private int batchSize = DEFAULT_BATCH_SIZE;
 
     private String rewriteSqlStr(String sqlStr) throws JSQLParserException {
         net.sf.jsqlparser.statement.Statement statement = CCJSqlParserUtil.parse(sqlStr);
@@ -100,10 +104,15 @@ public class MPreparedStatement implements Closeable {
         return objects;
     }
 
-    public MPreparedStatement(Connection conn, String sqlStr) throws SQLException, JSQLParserException {
+    public MPreparedStatement(Connection conn, String sqlStr, int batchSize) throws SQLException, JSQLParserException {
         this.sqlStr = rewriteSqlStr(sqlStr);
+        this.batchSize = batchSize;
         statement = conn.prepareStatement(this.sqlStr);
         parameterMetaData = statement.getParameterMetaData();
+    }
+
+    public MPreparedStatement(Connection conn, String sqlStr) throws SQLException, JSQLParserException {
+        this(conn, sqlStr, DEFAULT_BATCH_SIZE);
     }
 
     private void setParameters(Map<String, Object> parameterValues) throws SQLException {
@@ -203,10 +212,13 @@ public class MPreparedStatement implements Closeable {
         statement.cancel();
     }
 
+
     public void addBatch(Map<String, Object> parameterValues) throws SQLException {
         statement.clearParameters();
         setParameters(parameterValues);
         statement.addBatch();
+
+        recordCount++;
     }
 
     public void addBatch(Object... parameterValues) throws SQLException {
@@ -216,10 +228,29 @@ public class MPreparedStatement implements Closeable {
     }
 
     public int[] executeBatch() throws SQLException {
+        recordCount = 0;
         return statement.executeBatch();
     }
 
+    public int[] addAndExecuteBatch(Map<String, Object> parameterValues) throws SQLException {
+        addBatch(parameterValues);
+
+        if (recordCount % batchSize == 0) {
+            return executeBatch();
+        } else
+            return new int[0];
+    }
+
     public void clearBatch() throws SQLException {
+        recordCount = 0;
         statement.clearBatch();
+    }
+
+    public ResultSet getResultSet() throws SQLException {
+        return statement.getResultSet();
+    }
+
+    public int getUpdateCount() throws SQLException {
+        return statement.getUpdateCount();
     }
 }

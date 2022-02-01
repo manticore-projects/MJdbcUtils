@@ -23,6 +23,7 @@ package com.manticore.jdbc;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.function.Executable;
@@ -60,6 +61,13 @@ public class MPreparedStatementTest {
         }
     }
 
+    @BeforeEach
+    private void truncateTable() throws SQLException {
+        try (Statement st = conn.createStatement()) {
+            st.executeUpdate("TRUNCATE table test");
+        }
+    }
+
     @AfterAll
     private void closeConnection() {
         try {
@@ -79,7 +87,8 @@ public class MPreparedStatementTest {
             @Override
             public void execute() throws Throwable {
                 MPreparedStatement st = new MPreparedStatement(conn, ddlStr);
-                st.execute(parameters);
+                Assertions.assertFalse( st.execute(parameters) );
+                Assertions.assertEquals(1, st.getUpdateCount());
             }
         });
 
@@ -92,6 +101,47 @@ public class MPreparedStatementTest {
                 ) {
                     rs.next();
                     Assertions.assertEquals(1, rs.getInt(1));
+                }
+            }
+        });
+    }
+
+    @Test
+    public void batchTest() throws Exception {
+        int maxRecords = 100;
+        int batchSize = 4;
+        String ddlStr = "INSERT INTO test VALUES ( :a, :b, :c, :d, :e )";
+        String qryStr = "SELECT Count(*) FROM test";
+
+        Map<String, Object> parameters = toMap("a", 1, "b", "Test String", "c", new Date(), "d", new Date(), "e", "0.12345");
+
+        Assertions.assertDoesNotThrow(new Executable() {
+            @Override
+            public void execute() throws Throwable {
+                MPreparedStatement st = new MPreparedStatement(conn, ddlStr, batchSize);
+
+                for (int i=0; i < maxRecords; i++) {
+                    parameters.put("a", i);
+                    parameters.put("b", "Test String " + i);
+
+                    int[] results = st.addAndExecuteBatch(parameters);
+                    int expectedArrLength = (i+1) % batchSize == 0 ? batchSize : 0;
+
+                    Assertions.assertEquals( expectedArrLength , results.length);
+                }
+                st.executeBatch();
+            }
+        });
+
+        Assertions.assertDoesNotThrow(new Executable() {
+            @Override
+            public void execute() throws Throwable {
+                try (
+                        MPreparedStatement st = new MPreparedStatement(conn, qryStr);
+                        ResultSet rs = st.executeQuery(parameters);
+                ) {
+                    rs.next();
+                    Assertions.assertEquals(maxRecords, rs.getInt(1));
                 }
             }
         });
