@@ -83,13 +83,18 @@ public class MPreparedStatementTest {
             }
         });
 
-        try (
-                MPreparedStatement st = new MPreparedStatement(conn, qryStr);
-                ResultSet rs = st.executeQuery(parameters);
+        Assertions.assertDoesNotThrow(new Executable() {
+            @Override
+            public void execute() throws Throwable {
+                try (
+                        MPreparedStatement st = new MPreparedStatement(conn, qryStr);
+                        ResultSet rs = st.executeQuery(parameters);
                 ) {
-            rs.next();
-            Assertions.assertEquals(1, rs.getInt(1));
-        }
+                    rs.next();
+                    Assertions.assertEquals(1, rs.getInt(1));
+                }
+            }
+        });
     }
 
 }
