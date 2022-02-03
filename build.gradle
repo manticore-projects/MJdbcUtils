@@ -1,12 +1,19 @@
 plugins {
     id 'java'
     id "com.github.hierynomus.license" version "latest.release"
+    id 'jacoco'
+    id "com.github.spotbugs" version "latest.release"
+    id 'pmd'
+    id 'checkstyle'
 }
 
-group 'org.example'
+group 'com.manticore-projects'
 version '1.0-SNAPSHOT'
+description = 'JDBC extension for Statements with Named Parameters'
+java.sourceCompatibility = JavaVersion.VERSION_1_8
 
 repositories {
+    gradlePluginPortal()
     mavenCentral()
 
     maven {
@@ -28,6 +35,19 @@ dependencies {
     testImplementation 'com.h2database:h2:2.+'
 }
 
+java {
+    withSourcesJar()
+    withJavadocJar()
+
+    spotbugs
+    pmd
+
+}
+
+jacoco {
+    toolVersion = "0.8.7"
+}
+
 test {
     useJUnitPlatform()
 }
@@ -36,4 +56,85 @@ license {
     ext.year = Calendar.getInstance().get(Calendar.YEAR)
     ext.name = 'manticore-projects Co. Ltd.'
     ext.email = 'support@manticore-projects.com'
+}
+
+jacocoTestReport {
+    dependsOn test // tests are required to run before generating the report
+    reports {
+        xml.required = false
+        csv.required = false
+        html.outputLocation = layout.buildDirectory.dir('reports/jacoco')
+    }
+}
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.96
+            }
+            excludes = [
+            ]
+        }
+        rule {
+            limit {
+                counter = 'LINE'
+                value = 'MISSEDCOUNT'
+                maximum = 20
+                }
+            excludes = [
+            ]
+        }
+    }
+}
+
+spotbugsMain {
+    reports {
+        html {
+            enabled = true
+            destination = file("build/reports/spotbugs/main/spotbugs.html")
+            stylesheet = 'fancy-hist.xsl'
+        }
+    }
+}
+
+spotbugs {
+    // fail only on P1 and without the net.sf.jsqlparser.parser.*
+    excludeFilter = file("config/spotBugsExcludeFilter.xml")
+    
+    // do not run over the test, although we should do that eventually
+     spotbugsTest.enabled = false
+}
+
+pmd {
+    consoleOutput = false
+    toolVersion = "6.36.0"
+    
+    sourceSets = [sourceSets.main]
+    
+    // clear the ruleset in order to use configured rules only
+    ruleSets = []
+    
+    //rulesMinimumPriority = 1
+    
+    ruleSetFiles = files("config/ruleset.xml")
+    
+    pmdMain {
+        excludes = [
+                "build/generated/*"
+        ]
+    }
+}
+
+checkstyle {
+    toolVersion "8.45.1"
+    sourceSets = [sourceSets.main, sourceSets.test]
+    configFile =rootProject.file('config/checkstyle/checkstyle.xml')
+}
+
+tasks.withType(Checkstyle) {
+    reports {
+        xml.required = false
+        html.required = true
+    }
 }

@@ -25,11 +25,18 @@ import java.util.LinkedList;
 import java.util.TreeSet;
 
 public class MNamedParameter implements Comparable<MNamedParameter> {
-    public String id;
-    public String label;
+    private String id;
+    private String label;
 
-    public Object value;
-    public TreeSet<Integer> positions = new TreeSet<>();
+    private Object value;
+    private TreeSet<Integer> positions = new TreeSet<>();
+
+    private Integer type = null;
+    private String typeName = null;
+    private Integer precision = null;
+    private Integer scale = null;
+    private Integer nullable = null;
+    private String className = null;
 
     public static LinkedList<Object> getParameterValueArray(Collection<MNamedParameter> parameters) {
         LinkedList<Object> objects = new LinkedList<>();
@@ -75,5 +82,55 @@ public class MNamedParameter implements Comparable<MNamedParameter> {
     @Override
     public String toString() {
         return this.label != null && this.label.length() > 0 ? this.label : this.id;
+    }
+
+
+    public void setType(int type,  String typeName, String className, int precision, int scale, int nullable) {
+        this.type = type;
+        this.typeName = typeName;
+        this.className = className;
+        this.precision = precision;
+        this.scale = scale;
+        this.nullable = nullable;
+    }
+
+    public Integer getScale() {
+        return scale;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public Object getValue() {
+        return value;
+    }
+
+    public TreeSet<Integer> getPositions() {
+        return positions;
+    }
+
+    public Integer getType() {
+        return type;
+    }
+
+    public String getTypeName() {
+        return typeName;
+    }
+
+    public Integer getPrecision() {
+        return precision;
+    }
+
+    public Integer getNullable() {
+        return nullable;
+    }
+
+    public String getClassName() {
+        return className;
     }
 }

@@ -34,11 +34,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class MPreparedStatementTest {
-
+    private final static Logger LOGGER = Logger.getLogger(MPreparedStatementTest.class.getName());
     private final Connection conn;
 
     public MPreparedStatementTest() throws SQLException {
@@ -77,7 +79,7 @@ public class MPreparedStatementTest {
     }
 
     @Test
-    public void executeTest() throws Exception {
+    public void execute() throws Exception {
         String ddlStr = "INSERT INTO test VALUES ( :a, :b, :c, :d, :e )";
         String qryStr = "SELECT Count(*) FROM test WHERE a = :a or b = :b";
 
@@ -107,7 +109,7 @@ public class MPreparedStatementTest {
     }
 
     @Test
-    public void batchTest() throws Exception {
+    public void addAndExecuteBatch() throws Exception {
         int maxRecords = 100;
         int batchSize = 4;
         String ddlStr = "INSERT INTO test VALUES ( :a, :b, :c, :d, :e )";
@@ -142,6 +144,67 @@ public class MPreparedStatementTest {
                 ) {
                     rs.next();
                     Assertions.assertEquals(maxRecords, rs.getInt(1));
+                }
+            }
+        });
+    }
+
+    @Test
+    public void getNamedParametersByAppearance() throws Exception {
+        String qryStr = "SELECT * FROM test WHERE d = :d and c = :c and b = :b and a = :a and e = :e";
+
+        Assertions.assertDoesNotThrow(new Executable() {
+            @Override
+            public void execute() throws Throwable {
+                try (
+                        MPreparedStatement st = new MPreparedStatement(conn, qryStr);
+                ) {
+                    List<MNamedParameter> parameters = st.getNamedParametersByAppearance();
+
+                    Assertions.assertEquals("D", parameters.get(0).getId());
+                    Assertions.assertEquals(java.sql.Timestamp.class.getName(), parameters.get(0).getClassName());
+
+                    Assertions.assertEquals("C", parameters.get(1).getId());
+                    Assertions.assertEquals(java.sql.Date.class.getName(), parameters.get(1).getClassName());
+
+                    Assertions.assertEquals("B", parameters.get(2).getId());
+                    Assertions.assertEquals(java.lang.String.class.getName(), parameters.get(2).getClassName());
+
+                    Assertions.assertEquals("A", parameters.get(3).getId());
+                    Assertions.assertEquals(java.math.BigDecimal.class.getName(), parameters.get(3).getClassName());
+                    Assertions.assertEquals(3, parameters.get(3).getPrecision());
+                    Assertions.assertEquals(0, parameters.get(3).getScale());
+
+                    Assertions.assertEquals("E", parameters.get(4).getId());
+                    Assertions.assertEquals(23, parameters.get(4).getPrecision());
+                    Assertions.assertEquals(5, parameters.get(4).getScale());
+
+                    StringBuilder builder = new StringBuilder("Found Named Parameters (ordered by appearance:\n");
+                    for (MNamedParameter p:parameters) {
+                        builder.append(p.getId()).append("\t").append(p.getClassName()).append("\n");
+                    }
+                    LOGGER.info(builder.toString());
+                }
+            }
+        });
+    }
+
+    @Test
+    public void getNamedParametersByName() throws Exception {
+        String qryStr = "SELECT * FROM test WHERE d = :d and c = :c and b = :b and a = :a and e = :e";
+
+        Assertions.assertDoesNotThrow(new Executable() {
+            @Override
+            public void execute() throws Throwable {
+                try (
+                        MPreparedStatement st = new MPreparedStatement(conn, qryStr);
+                ) {
+                    List<MNamedParameter> parameters = st.getNamedParametersByName();
+                    Assertions.assertEquals("A", parameters.get(0).getId());
+                    Assertions.assertEquals("B", parameters.get(1).getId());
+                    Assertions.assertEquals("C", parameters.get(2).getId());
+                    Assertions.assertEquals("D", parameters.get(3).getId());
+                    Assertions.assertEquals("E", parameters.get(4).getId());
                 }
             }
         });

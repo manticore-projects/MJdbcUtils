@@ -38,7 +38,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 public class MPreparedStatement implements Closeable {
@@ -49,7 +52,7 @@ public class MPreparedStatement implements Closeable {
     private final CaseInsensitiveMap<String, MNamedParameter> parameters = new CaseInsensitiveMap<>();
 
     private long recordCount = 0;
-    private int batchSize = DEFAULT_BATCH_SIZE;
+    private final int batchSize;
 
     private String rewriteSqlStr(String sqlStr) throws JSQLParserException {
         net.sf.jsqlparser.statement.Statement statement = CCJSqlParserUtil.parse(sqlStr);
@@ -95,11 +98,11 @@ public class MPreparedStatement implements Closeable {
     private LinkedList<Object> getParamArr(Map<String, Object> parameterValues) {
         LinkedList<Object> objects = new LinkedList<>();
         for (MNamedParameter p : parameters.values())
-            for (Integer position : p.positions) {
+            for (Integer position : p.getPositions()) {
                 while (objects.size() < position) {
                     objects.add(null);
                 }
-                objects.set(position - 1, parameterValues.get(p.id) );
+                objects.set(position - 1, parameterValues.get(p.getId()) );
             }
         return objects;
     }
@@ -109,6 +112,8 @@ public class MPreparedStatement implements Closeable {
         this.batchSize = batchSize;
         statement = conn.prepareStatement(this.sqlStr);
         parameterMetaData = statement.getParameterMetaData();
+
+        setParameterTypes();
     }
 
     public MPreparedStatement(Connection conn, String sqlStr) throws SQLException, JSQLParserException {
@@ -252,5 +257,46 @@ public class MPreparedStatement implements Closeable {
 
     public int getUpdateCount() throws SQLException {
         return statement.getUpdateCount();
+    }
+
+    private void setParameterTypes() throws SQLException {
+        for (int i=1; i<=parameterMetaData.getParameterCount(); i++ ) {
+            for (MNamedParameter p: parameters.values()) {
+                if (p.getPositions().first() == i ) {
+                    int type = parameterMetaData.getParameterType(i);
+                    String typeName = parameterMetaData.getParameterTypeName(i);
+                    int precision = parameterMetaData.getPrecision(i);
+                    int scale = parameterMetaData.getScale(i);
+                    int nullable = parameterMetaData.isNullable(i);
+                    String className = parameterMetaData.getParameterClassName(i);
+
+                    p.setType(type, typeName, className, precision, scale, nullable);
+                }
+            }
+        }
+    }
+
+    public List<MNamedParameter> getNamedParametersByAppearance() {
+        LinkedList<MNamedParameter> values = new LinkedList<>(parameters.values());
+        Comparator<MNamedParameter> comparator = new Comparator<MNamedParameter>() {
+            @Override
+            public int compare(MNamedParameter o1, MNamedParameter o2) {
+                return Integer.compare(o1.getPositions().first(), o2.getPositions().first());
+            }
+        };
+        Collections.sort(values, comparator);
+        return values;
+    }
+
+    public List<MNamedParameter> getNamedParametersByName() {
+        LinkedList<MNamedParameter> values = new LinkedList<>(parameters.values());
+        Comparator<MNamedParameter> comparator = new Comparator<MNamedParameter>() {
+            @Override
+            public int compare(MNamedParameter o1, MNamedParameter o2) {
+                return  o1.getId().compareToIgnoreCase(o2.getId());
+            }
+        };
+        Collections.sort(values, comparator);
+        return values;
     }
 }
