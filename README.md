@@ -2,6 +2,8 @@
 
 Library supporting Named Parameters (e.g. `:Customer_Id` ) in Queries or DML/DDL statements.
 
+[GitHub](https://github.com/manticore-projects/MJdbcUtils) [WebSite](http://manticore-projects.com/MJdbcUtils/README.html)
+
 ## Use case
 When the RDBMS does not support Named Parameters directly, it will:
 
