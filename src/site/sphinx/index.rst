@@ -21,6 +21,24 @@ Development version: |MJDBCUTILS_SNAPSHOT_VERSION_LINK|
 
 `GitHub Repository <https://github.com/manticore-projects/MJdbcUtils>`_
 
+.. image:: https://badgen.net/maven/v/maven-central/com.manticore-projects.jdbc/MJdbcUtils
+    :alt: Maven Badge
+
+.. image:: https://app.codacy.com/gh/manticore-projects/MJdbcUtils/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade
+    :alt: Codacy Badge
+
+.. image:: https://badgen.net/coveralls/c/github/manticore-projects/MJdbcUtils/main
+    :alt: Coveralls Badge
+
+.. image:: https://img.shields.io/badge/License-GPL-blue
+    :alt: License Badge
+
+.. image:: https://img.shields.io/github/release/manticore-projects/MJdbcUtils?include_prereleases=&sort=semver&color=blue
+    :alt: GitGub Release Badge
+
+.. image:: https://img.shields.io/github/issues/manticore-projects/MJdbcUtils
+    :alt: GitGub Issues Badge
+
 .. code-block:: Java
     :caption: Sample SQL Statement
 

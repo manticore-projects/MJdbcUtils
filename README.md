@@ -2,6 +2,16 @@
 
 Library supporting Named Parameters (e.g. `:Customer_Id` ) in Queries or DML/DDL statements.
 
+[![Maven](https://badgen.net/maven/v/maven-central/com.manticore-projects.jdbc/MJdbcUtils)]
+
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/e3295140a0b841f3be25da37ff8d4756)](https://app.codacy.com/gh/manticore-projects/MJdbcUtils/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+
+[![Coverall](https://badgen.net/coveralls/c/github/manticore-projects/MJdbcUtils/main)]
+
+[![GitHub release](https://img.shields.io/github/release/manticore-projects/MJdbcUtils?include_prereleases=&sort=semver&color=blue)](https://github.com/manticore-projects/MJdbcUtils/releases/)
+[![License](https://img.shields.io/badge/License-GPL-blue)](#license)
+[![issues - MJdbcUtils](https://img.shields.io/github/issues/manticore-projects/MJdbcUtils)](https://github.com/manticore-projects/MJdbcUtils/issues)
+
 [GitHub](https://github.com/manticore-projects/MJdbcUtils) [WebSite](http://manticore-projects.com/MJdbcUtils/README.html)
 
 ## Use case
