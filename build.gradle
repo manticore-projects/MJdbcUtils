@@ -336,5 +336,4 @@ tasks.register('upload') {
 tasks.register('gitChangelogTask', GitChangelogTask) {
     fromRepo = file("$projectDir")
     file = new File("${projectDir}/src/site/sphinx/changelog.md")
-    fromRef = "1.0"
 }
