@@ -6,6 +6,7 @@ plugins {
     id 'signing'
 
     id 'jacoco'
+    id 'com.github.kt3k.coveralls' version "latest.release"
     id 'pmd'
     id 'checkstyle'
     id "com.github.spotbugs" version "latest.release"
@@ -138,7 +139,7 @@ license {
 jacocoTestReport {
     dependsOn test // tests are required to run before generating the report
     reports {
-        xml.required = false
+        xml.required = true
         csv.required = false
         html.outputLocation = layout.buildDirectory.dir('reports/jacoco')
     }
@@ -164,6 +165,11 @@ jacocoTestCoverageVerification {
         }
     }
 }
+
+coveralls {
+    jacocoReportPath 'build/reports/jacoco/test/jacocoTestReport.xml'
+}
+
 
 spotbugsMain {
     reports {
