@@ -1,22 +1,20 @@
 /**
- * Copyright (C) 2021 Andreas Reichel <andreas@manticore-projects.com>
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the
- * Free Software Foundation; either version 2 of the License, or (at your
- * option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Copyright (C) 2023 manticore-projects Co. Ltd. <support@manticore-projects.com>
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * <p>
+ * This program is free software; you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation; either version 2 of the
+ * License, or (at your option) any later version.
+ * <p>
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
- *
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * <p>
+ * You should have received a copy of the GNU General Public License along with this program; if
+ * not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+ * 02111-1307 USA.
+ * <p>
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 package com.manticore.jdbc;
 
@@ -45,11 +43,12 @@ import java.util.List;
 import java.util.Map;
 
 public class MPreparedStatement implements Closeable {
-    private final static int DEFAULT_BATCH_SIZE=24;
+    private final static int DEFAULT_BATCH_SIZE = 24;
     private final PreparedStatement statement;
     private final ParameterMetaData parameterMetaData;
     private final String sqlStr;
-    private final CaseInsensitiveMap<String, MNamedParameter> parameters = new CaseInsensitiveMap<>();
+    private final CaseInsensitiveMap<String, MNamedParameter> parameters =
+            new CaseInsensitiveMap<>();
 
     private long recordCount = 0;
     private final int batchSize;
@@ -89,7 +88,8 @@ public class MPreparedStatement implements Closeable {
         expressionDeParser.setSelectVisitor(selectDeParser);
         expressionDeParser.setBuffer(builder);
 
-        StatementDeParser statementDeParser = new StatementDeParser(expressionDeParser, selectDeParser, builder);
+        StatementDeParser statementDeParser =
+                new StatementDeParser(expressionDeParser, selectDeParser, builder);
         statement.accept(statementDeParser);
 
         return builder.toString();
@@ -97,17 +97,19 @@ public class MPreparedStatement implements Closeable {
 
     private LinkedList<Object> getParamArr(Map<String, Object> parameterValues) {
         LinkedList<Object> objects = new LinkedList<>();
-        for (MNamedParameter p : parameters.values())
+        for (MNamedParameter p : parameters.values()) {
             for (Integer position : p.getPositions()) {
                 while (objects.size() < position) {
                     objects.add(null);
                 }
-                objects.set(position - 1, parameterValues.get(p.getId()) );
+                objects.set(position - 1, parameterValues.get(p.getId()));
             }
+        }
         return objects;
     }
 
-    public MPreparedStatement(Connection conn, String sqlStr, int batchSize) throws SQLException, JSQLParserException {
+    public MPreparedStatement(Connection conn, String sqlStr, int batchSize)
+            throws SQLException, JSQLParserException {
         this.sqlStr = rewriteSqlStr(sqlStr);
         this.batchSize = batchSize;
         statement = conn.prepareStatement(this.sqlStr);
@@ -116,29 +118,32 @@ public class MPreparedStatement implements Closeable {
         setParameterTypes();
     }
 
-    public MPreparedStatement(Connection conn, String sqlStr) throws SQLException, JSQLParserException {
+    public MPreparedStatement(Connection conn, String sqlStr)
+            throws SQLException, JSQLParserException {
         this(conn, sqlStr, DEFAULT_BATCH_SIZE);
     }
 
     private void setParameters(Map<String, Object> parameterValues) throws SQLException {
-        setParameters( getParamArr(parameterValues).toArray() );
+        setParameters(getParamArr(parameterValues).toArray());
     }
 
     private void setParameters(Object... parameterValues) throws SQLException {
         statement.clearParameters();
-        int parameterIndex=0;
+        int parameterIndex = 0;
         for (Object o : parameterValues) {
             parameterIndex++;
             try {
                 int parameterType = parameterMetaData.getParameterType(parameterIndex);
                 switch (parameterType) {
-                    case java.sql.Types.TIMESTAMP:
+                    case Types.TIMESTAMP:
                         if (o instanceof java.util.Date) {
                             java.util.Date date = (java.util.Date) o;
-                            statement.setTimestamp(parameterIndex, MJdbcTools.getSQLTimestamp(date));
+                            statement.setTimestamp(parameterIndex,
+                                    MJdbcTools.getSQLTimestamp(date));
                         } else if (o instanceof Calendar) {
                             Calendar calendar = (Calendar) o;
-                            statement.setTimestamp(parameterIndex, MJdbcTools.getSQLTimestamp(calendar));
+                            statement.setTimestamp(parameterIndex,
+                                    MJdbcTools.getSQLTimestamp(calendar));
                         } else {
                             statement.setObject(parameterIndex, o);
                         }
@@ -159,13 +164,14 @@ public class MPreparedStatement implements Closeable {
                     case Types.LONGVARBINARY:
                         if (o instanceof byte[]) {
                             byte[] bytes = (byte[]) o;
-                            statement.setBinaryStream(parameterIndex, new ByteArrayInputStream(bytes), bytes.length);
+                            statement.setBinaryStream(parameterIndex,
+                                    new ByteArrayInputStream(bytes), bytes.length);
                         } else {
                             statement.setObject(parameterIndex, o);
                         }
                         break;
 
-                    //@todo: add more SQLType Mappings
+                    // @todo: add more SQLType Mappings
                     default:
                         statement.setObject(parameterIndex, o);
                 }
@@ -205,11 +211,11 @@ public class MPreparedStatement implements Closeable {
         return statement.executeQuery();
     }
 
-    public void close()  {
+    public void close() {
         try {
             statement.close();
         } catch (Exception ignore) {
-
+            // nothing we can do here
         }
     }
 
@@ -242,8 +248,9 @@ public class MPreparedStatement implements Closeable {
 
         if (recordCount % batchSize == 0) {
             return executeBatch();
-        } else
+        } else {
             return new int[0];
+        }
     }
 
     public void clearBatch() throws SQLException {
@@ -260,9 +267,9 @@ public class MPreparedStatement implements Closeable {
     }
 
     private void setParameterTypes() throws SQLException {
-        for (int i=1; i<=parameterMetaData.getParameterCount(); i++ ) {
-            for (MNamedParameter p: parameters.values()) {
-                if (p.getPositions().first() == i ) {
+        for (int i = 1; i <= parameterMetaData.getParameterCount(); i++) {
+            for (MNamedParameter p : parameters.values()) {
+                if (p.getPositions().first() == i) {
                     int type = parameterMetaData.getParameterType(i);
                     String typeName = parameterMetaData.getParameterTypeName(i);
                     int precision = parameterMetaData.getPrecision(i);
@@ -293,7 +300,7 @@ public class MPreparedStatement implements Closeable {
         Comparator<MNamedParameter> comparator = new Comparator<MNamedParameter>() {
             @Override
             public int compare(MNamedParameter o1, MNamedParameter o2) {
-                return  o1.getId().compareToIgnoreCase(o2.getId());
+                return o1.getId().compareToIgnoreCase(o2.getId());
             }
         };
         Collections.sort(values, comparator);
