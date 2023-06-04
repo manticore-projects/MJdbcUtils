@@ -17,8 +17,10 @@ MJdbcUtils - JDBC Named Parameter Tools
 .. image:: https://app.codacy.com/project/badge/Grade/e3295140a0b841f3be25da37ff8d4756
     :alt: Codacy Badge
 
-.. image:: https://badgen.net/coveralls/c/github/manticore-projects/MJdbcUtils/main
+.. image:: https://coveralls.io/repos/github/manticore-projects/MJdbcUtils/badge.svg?branch=main
     :alt: Coveralls Badge
+    :target: https://coveralls.io/github/manticore-projects/MJdbcUtils?branch=main
+
 
 .. image:: https://img.shields.io/badge/License-GPL-blue
     :alt: License Badge
