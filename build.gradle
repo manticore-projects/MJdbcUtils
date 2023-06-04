@@ -328,10 +328,6 @@ tasks.register('upload') {
                 for (File file: fileTree(include:['*.jar'], dir:"${project.buildDir}/libs").collect()) {
                     put from: file, into: "download/${project.name}-${versionStable}"
                 }
-
-                // share the two relevant resources for download
-                put from: "${projectDir}/src/main/resources/com/manticore/floating_toc.css", into: "download/${project.name}-${versionStable}"
-                put from: "${projectDir}/src/main/resources/com/manticore/floating_toc.js", into: "download/${project.name}-${versionStable}"
             }
         }
     }
