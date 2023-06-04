@@ -7,95 +7,91 @@ Compile from Source Code
 
 You will need to have ``JDK 8`` or ``JDK 11`` installed.
 
-.. tabs::
+.. tab:: Maven
 
-  .. tab:: Maven
+.. code-block:: shell
 
-    .. code-block:: shell
+        git clone https://github.com/manticore-projects/MJdbcUtils.git
+        cd MJdbcUtils
+        mvn install
 
-            git clone https://github.com/manticore-projects/MJdbcUtils.git
-            cd MJdbcUtils
-            mvn install
+.. tab:: Gradle
 
-  .. tab:: Gradle
+  .. code-block:: shell
 
-      .. code-block:: shell
-    
-            git clone https://github.com/manticore-projects/MJdbcUtils.git
-            cd MJdbcUtils
-            gradle build
+        git clone https://github.com/manticore-projects/MJdbcUtils.git
+        cd MJdbcUtils
+        gradle build
 
 
 
 Build Dependencies
 ==============================
 
-.. tabs::
+.. tab:: Maven Release
 
+    .. code-block:: xml
+        :substitutions:
 
-  .. tab:: Maven Release
+        <dependency>
+            <groupId>com.manticore-projects.jdbc</groupId>
+            <artifactId>MJdbcTools</artifactId>
+            <version>|MJDBCUTILS_VERSION|</version>
+        </dependency>
 
-        .. code-block:: xml
-            :substitutions:
+.. tab:: Maven Snapshot
 
-            <dependency>
-                <groupId>com.manticore-projects.jdbc</groupId>
-                <artifactId>MJdbcTools</artifactId>
-                <version>|MJDBCUTILS_VERSION|</version>
-            </dependency>
+    .. code-block:: xml
+        :substitutions:
 
-  .. tab:: Maven Snapshot
+        <repositories>
+            <repository>
+                <id>sonatype-snapshots</id>
+                <snapshots>
+                    <enabled>true</enabled>
+                </snapshots>
+                <url>https://oss.sonatype.org/content/groups/public/</url>
+            </repository>
+        </repositories>
+        <dependency>
+            <groupId>com.manticore-projects.jdbc</groupId>
+            <artifactId>MJdbcTools</artifactId>
+            <version>|MJDBCUTILS_SNAPSHOT_VERSION|</version>
+        </dependency>
 
-        .. code-block:: xml
-            :substitutions:
- 
-            <repositories>
-                <repository>
-                    <id>sonatype-snapshots</id>
-                    <snapshots>
-                        <enabled>true</enabled>
-                    </snapshots>
-                    <url>https://oss.sonatype.org/content/groups/public/</url>
-                </repository>
-            </repositories>
-            <dependency>
-                <groupId>com.manticore-projects.jdbc</groupId>
-                <artifactId>MJdbcTools</artifactId>
-                <version>|MJDBCUTILS_SNAPSHOT_VERSION|</version>
-            </dependency>
+.. tab:: Gradle Stable
 
-  .. tab:: Gradle Stable
+    .. code-block:: groovy
+        :substitutions:
 
-        .. code-block:: groovy
-            :substitutions:
+        repositories {
+            mavenCentral()
+        }
 
-            repositories {
-                mavenCentral()
+        dependencies {
+            implementation 'com.manticore-projects.jdbc:MJdbcTools:|MJDBCUTILS_VERSION|'
+        }
+
+.. tab:: Gradle Snapshot
+
+    .. code-block:: groovy
+        :substitutions:
+
+        repositories {
+            maven {
+                url = uri('https://oss.sonatype.org/content/groups/public/')
             }
+        }
 
-            dependencies {
-                implementation 'com.manticore-projects.jdbc:MJdbcTools:|MJDBCUTILS_VERSION|'
-            }
-
-  .. tab:: Gradle Snapshot
-
-        .. code-block:: groovy
-            :substitutions:
-
-            repositories {
-                maven {
-                    url = uri('https://oss.sonatype.org/content/groups/public/')
-                }
-            }
-
-            dependencies {
-                implementation 'com.manticore-projects.jdbc:MJdbcTools:|MJDBCUTILS_SNAPSHOT_VERSION|'
-            }
+        dependencies {
+            implementation 'com.manticore-projects.jdbc:MJdbcTools:|MJDBCUTILS_SNAPSHOT_VERSION|'
+        }
 
 Code Examples
 ==============================
 
 Based on a Table Definition
+
 .. code-block:: sql
     :substitutions:
 
@@ -109,6 +105,7 @@ Based on a Table Definition
 
 
 1) We can fill the table with a simple update
+
     .. code-block:: java
         :substitutions:
 
@@ -126,6 +123,7 @@ Based on a Table Definition
 
 
 2) We can fill table using Batch Updates
+
     .. code-block:: java
         :substitutions:
 
@@ -148,6 +146,7 @@ Based on a Table Definition
 
 
 3) We can query our table
+
     .. code-block:: java
         :substitutions:
 
@@ -158,6 +157,7 @@ Based on a Table Definition
 
 
 4) We can rewrite our statement and inject the parameter values directly (useful for Oracle DDLs)
+
     .. code-block:: java
         :substitutions:
 
@@ -180,6 +180,7 @@ Based on a Table Definition
 
 
 5) We can retrieve the information about the used parameters for building a UI Dialog
+
     .. code-block:: java
         :substitutions:
 
@@ -190,6 +191,7 @@ Based on a Table Definition
 
 
     Output of the List:
+
     .. code-block:: text
         :substitutions:
 
