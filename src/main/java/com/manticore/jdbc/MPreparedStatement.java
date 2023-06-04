@@ -291,7 +291,7 @@ public class MPreparedStatement implements Closeable {
                 return Integer.compare(o1.getPositions().first(), o2.getPositions().first());
             }
         };
-        Collections.sort(values, comparator);
+        values.sort(comparator);
         return values;
     }
 
@@ -303,7 +303,7 @@ public class MPreparedStatement implements Closeable {
                 return o1.getId().compareToIgnoreCase(o2.getId());
             }
         };
-        Collections.sort(values, comparator);
+        values.sort(comparator);
         return values;
     }
 }

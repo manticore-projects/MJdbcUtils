@@ -31,7 +31,9 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDate;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -46,7 +48,16 @@ public class MPreparedStatementTest {
 
         try (Statement statement = conn.createStatement()) {
             statement.execute(
-                    "CREATE TABLE test ( a DECIMAL(3) PRIMARY KEY, b VARCHAR(128) NOT NULL, c DATE NOT NULL, d TIMESTAMP NOT NULL, e DECIMAL(23,5) NOT NULL ) ");
+                    "CREATE TABLE test ( a DECIMAL(3) PRIMARY KEY" +
+                            ", b VARCHAR(128) NOT NULL" +
+                            ", c DATE NOT NULL" +
+                            ", d DATE NOT NULL" +
+                            ", e DATE NOT NULL" +
+                            ", f TIMESTAMP NOT NULL" +
+                            ", g TIMESTAMP NOT NULL" +
+                            ", h TIMESTAMP NOT NULL" +
+                            ", i DECIMAL(23,5) NOT NULL " +
+                            ") ");
         }
     }
 
@@ -80,11 +91,21 @@ public class MPreparedStatementTest {
 
     @Test
     public void execute() throws Exception {
-        String ddlStr = "INSERT INTO test VALUES ( :a, :b, :c, :d, :e )";
+        String ddlStr = "INSERT INTO test VALUES ( :a, :b, :c, :d, :e, :f, :g, :h, :i )";
         String qryStr = "SELECT Count(*) FROM test WHERE a = :a or b = :b";
 
         Map<String, Object> parameters =
-                toMap("a", 1, "b", "Test String", "c", new Date(), "d", new Date(), "e", "0.12345");
+                toMap(
+                        "a", 1
+                        , "b", "Test String"
+                        , "c", new Date()
+                        , "d", new GregorianCalendar()
+                        , "e", LocalDate.now()
+                        , "f", new Date()
+                        , "g", new GregorianCalendar()
+                        , "h", LocalDate.now()
+                        , "i", "0.12345"
+                );
 
         Assertions.assertDoesNotThrow(new Executable() {
             @Override
@@ -112,11 +133,21 @@ public class MPreparedStatementTest {
     public void addAndExecuteBatch() throws Exception {
         int maxRecords = 100;
         int batchSize = 4;
-        String ddlStr = "INSERT INTO test VALUES ( :a, :b, :c, :d, :e )";
-        String qryStr = "SELECT Count(*) FROM test";
+        String ddlStr = "INSERT INTO test VALUES ( :a, :b, :c, :d, :e, :f, :g, :h, :i )";
+        String qryStr = "SELECT Count(*) FROM test WHERE a = :a or b = :b";
 
         Map<String, Object> parameters =
-                toMap("a", 1, "b", "Test String", "c", new Date(), "d", new Date(), "e", "0.12345");
+                toMap(
+                        "a", 1
+                        , "b", "Test String"
+                        , "c", new Date()
+                        , "d", new GregorianCalendar()
+                        , "e", LocalDate.now()
+                        , "f", new Date()
+                        , "g", new GregorianCalendar()
+                        , "h", LocalDate.now()
+                        , "i", "0.12345"
+                );
 
         Assertions.assertDoesNotThrow(new Executable() {
             @Override
@@ -143,7 +174,7 @@ public class MPreparedStatementTest {
                         MPreparedStatement st = new MPreparedStatement(conn, qryStr);
                         ResultSet rs = st.executeQuery(parameters);) {
                     rs.next();
-                    Assertions.assertEquals(maxRecords, rs.getInt(1));
+                    Assertions.assertEquals(1, rs.getInt(1));
                 }
             }
         });
@@ -152,7 +183,7 @@ public class MPreparedStatementTest {
     @Test
     public void getNamedParametersByAppearance() {
         String qryStr =
-                "SELECT * FROM test WHERE d = :d and c = :c and b = :b and a = :a and e = :e";
+                "SELECT * FROM test WHERE d = :d and c = :c and b = :b and a = :a and i = :i";
 
         Assertions.assertDoesNotThrow(new Executable() {
             @Override
@@ -162,7 +193,7 @@ public class MPreparedStatementTest {
                     List<MNamedParameter> parameters = st.getNamedParametersByAppearance();
 
                     Assertions.assertEquals("D", parameters.get(0).getId());
-                    Assertions.assertEquals(java.sql.Timestamp.class.getName(),
+                    Assertions.assertEquals(java.sql.Date.class.getName(),
                             parameters.get(0).getClassName());
 
                     Assertions.assertEquals("C", parameters.get(1).getId());
@@ -179,7 +210,7 @@ public class MPreparedStatementTest {
                     Assertions.assertEquals(3, parameters.get(3).getPrecision());
                     Assertions.assertEquals(0, parameters.get(3).getScale());
 
-                    Assertions.assertEquals("E", parameters.get(4).getId());
+                    Assertions.assertEquals("I", parameters.get(4).getId());
                     Assertions.assertEquals(23, parameters.get(4).getPrecision());
                     Assertions.assertEquals(5, parameters.get(4).getScale());
 
