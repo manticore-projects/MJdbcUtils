@@ -35,7 +35,7 @@ Build Dependencies
 
         <dependency>
             <groupId>com.manticore-projects.jdbc</groupId>
-            <artifactId>MJdbcTools</artifactId>
+            <artifactId>MJdbcUtils</artifactId>
             <version>|MJDBCUTILS_VERSION|</version>
         </dependency>
 
@@ -55,7 +55,7 @@ Build Dependencies
         </repositories>
         <dependency>
             <groupId>com.manticore-projects.jdbc</groupId>
-            <artifactId>MJdbcTools</artifactId>
+            <artifactId>MJdbcUtils</artifactId>
             <version>|MJDBCUTILS_SNAPSHOT_VERSION|</version>
         </dependency>
 
@@ -69,7 +69,7 @@ Build Dependencies
         }
 
         dependencies {
-            implementation 'com.manticore-projects.jdbc:MJdbcTools:|MJDBCUTILS_VERSION|'
+            implementation 'com.manticore-projects.jdbc:MJdbcUtils:|MJDBCUTILS_VERSION|'
         }
 
 .. tab:: Gradle Snapshot
@@ -84,7 +84,7 @@ Build Dependencies
         }
 
         dependencies {
-            implementation 'com.manticore-projects.jdbc:MJdbcTools:|MJDBCUTILS_SNAPSHOT_VERSION|'
+            implementation 'com.manticore-projects.jdbc:MJdbcUtils:|MJDBCUTILS_SNAPSHOT_VERSION|'
         }
 
 Code Examples
