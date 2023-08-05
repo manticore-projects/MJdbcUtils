@@ -1,22 +1,20 @@
 /**
- * Copyright (C) 2021 Andreas Reichel <andreas@manticore-projects.com>
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the
- * Free Software Foundation; either version 2 of the License, or (at your
- * option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Copyright (C) 2023 manticore-projects Co. Ltd. <support@manticore-projects.com>
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * <p>
+ * This program is free software; you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation; either version 2 of the
+ * License, or (at your option) any later version.
+ * <p>
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
- *
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * <p>
+ * You should have received a copy of the GNU General Public License along with this program; if
+ * not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+ * 02111-1307 USA.
+ * <p>
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 package com.manticore.jdbc;
 
@@ -25,11 +23,11 @@ import java.util.LinkedList;
 import java.util.TreeSet;
 
 public class MNamedParameter implements Comparable<MNamedParameter> {
-    private String id;
+    private final String id;
     private String label;
 
     private Object value;
-    private TreeSet<Integer> positions = new TreeSet<>();
+    private final TreeSet<Integer> positions = new TreeSet<>();
 
     private Integer type = null;
     private String typeName = null;
@@ -38,15 +36,17 @@ public class MNamedParameter implements Comparable<MNamedParameter> {
     private Integer nullable = null;
     private String className = null;
 
-    public static LinkedList<Object> getParameterValueArray(Collection<MNamedParameter> parameters) {
+    public static LinkedList<Object> getParameterValueArray(
+            Collection<MNamedParameter> parameters) {
         LinkedList<Object> objects = new LinkedList<>();
-        for (MNamedParameter p : parameters)
+        for (MNamedParameter p : parameters) {
             for (Integer position : p.positions) {
                 while (objects.size() < position) {
                     objects.add(null);
                 }
                 objects.set(position - 1, p.value);
             }
+        }
         return objects;
     }
 
@@ -73,10 +73,16 @@ public class MNamedParameter implements Comparable<MNamedParameter> {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null) return false;
-        if (getClass() != obj.getClass()) return false;
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
         final MNamedParameter other = (MNamedParameter) obj;
-        return !((this.id == null) ? (other.id != null) : !this.id.equalsIgnoreCase(other.id));
+        return !(this.id == null
+                ? other.id != null
+                : !this.id.equalsIgnoreCase(other.id));
     }
 
     @Override
@@ -85,7 +91,8 @@ public class MNamedParameter implements Comparable<MNamedParameter> {
     }
 
 
-    public void setType(int type,  String typeName, String className, int precision, int scale, int nullable) {
+    public void setType(int type, String typeName, String className, int precision, int scale,
+            int nullable) {
         this.type = type;
         this.typeName = typeName;
         this.className = className;
@@ -102,6 +109,16 @@ public class MNamedParameter implements Comparable<MNamedParameter> {
         return id;
     }
 
+    public MNamedParameter setLabel(String label) {
+        this.label = label;
+        return this;
+    }
+
+    public MNamedParameter setValue(Object value) {
+        this.value = value;
+        return this;
+    }
+
     public String getLabel() {
         return label;
     }
@@ -111,7 +128,7 @@ public class MNamedParameter implements Comparable<MNamedParameter> {
     }
 
     public TreeSet<Integer> getPositions() {
-        return positions;
+        return new TreeSet<>(positions);
     }
 
     public Integer getType() {

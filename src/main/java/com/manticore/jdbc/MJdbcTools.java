@@ -1,22 +1,20 @@
 /**
- * Copyright (C) 2021 Andreas Reichel <andreas@manticore-projects.com>
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the
- * Free Software Foundation; either version 2 of the License, or (at your
- * option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Copyright (C) 2023 manticore-projects Co. Ltd. <support@manticore-projects.com>
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * <p>
+ * This program is free software; you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation; either version 2 of the
+ * License, or (at your option) any later version.
+ * <p>
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
- *
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * <p>
+ * You should have received a copy of the GNU General Public License along with this program; if
+ * not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+ * 02111-1307 USA.
+ * <p>
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 package com.manticore.jdbc;
 
@@ -30,43 +28,79 @@ import net.sf.jsqlparser.util.deparser.StatementDeParser;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Map;
 
 public class MJdbcTools {
-    public static final SimpleDateFormat SQL_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
-    public static final SimpleDateFormat SQL_TIMESTAMP_FORMAT =
-            new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+    public static final DateTimeFormatter SQL_DATE_FORMAT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    public static final DateTimeFormatter SQL_TIMESTAMP_FORMAT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
-
-    public final static java.sql.Date getSQLDate(Calendar cal) {
+    public static java.sql.Date getSQLDate(Calendar cal) {
         return new java.sql.Date(cal.getTimeInMillis());
     }
 
-    public final static java.sql.Date getSQLDate(Date d) {
+    public static java.sql.Date getSQLDate(Date d) {
         return new java.sql.Date(d.getTime());
     }
 
-    public final static java.sql.Timestamp getSQLTimestamp(Calendar cal) {
+    public static java.sql.Timestamp getSQLTimestamp(Calendar cal) {
         return new java.sql.Timestamp(cal.getTimeInMillis());
     }
 
-    public final static java.sql.Timestamp getSQLTimestamp(Date d) {
+    public static java.sql.Timestamp getSQLTimestamp(Date d) {
         return new java.sql.Timestamp(d.getTime());
     }
 
-    private static String getSQLHash(String sqlStr) throws JSQLParserException, NoSuchAlgorithmException {
+    public static String getSQLDateStr(Date d) {
+        LocalDate localDate = Instant
+                .ofEpochMilli(d.getTime())
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate();
+        return "{d '" + MJdbcTools.SQL_DATE_FORMAT.format(localDate) + "'}";
+    }
+
+    public static String getSQLDateStr(Calendar c) {
+        return getSQLDateStr(c.getTime());
+    }
+
+    public static String getSQLDateTimeStr(Date d) {
+        LocalDateTime localDateTime = d.toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
+        return "{ts '" + MJdbcTools.SQL_TIMESTAMP_FORMAT.format(localDateTime) + "'}";
+    }
+
+    public static String getSQLDateTimeStr(java.sql.Timestamp ts) {
+        LocalDateTime localDateTime = ts.toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
+        return "{ts '" + MJdbcTools.SQL_TIMESTAMP_FORMAT.format(localDateTime) + "'}";
+    }
+
+    public static String getSQLDateTimeStr(Calendar c) {
+        return getSQLDateTimeStr(c.getTime());
+    }
+
+    public static String getSQLHash(String sqlStr)
+            throws JSQLParserException, NoSuchAlgorithmException {
         MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
 
         net.sf.jsqlparser.statement.Statement statement = CCJSqlParserUtil.parse(sqlStr);
 
-        messageDigest.update(statement.toString().getBytes());
-        String hashStr =  new String(messageDigest.digest());
+        messageDigest.update(statement.toString().getBytes(Charset.defaultCharset()));
+        String hashStr = new String(messageDigest.digest(), Charset.defaultCharset());
 
         return hashStr;
     }
@@ -76,32 +110,44 @@ public class MJdbcTools {
             return "NULL";
         } else if (o instanceof java.sql.Date) {
             return "{d '" + o + "'}";
-        } else if (o instanceof java.util.Date) {
+        } else if (o instanceof Date) {
             Calendar cal = GregorianCalendar.getInstance();
-            cal.setTime((java.util.Date) o);
+            cal.setTime((Date) o);
 
             if (cal.get(Calendar.MILLISECOND) == 0
                     && cal.get(Calendar.SECOND) == 0
                     && cal.get(Calendar.MINUTE) == 0
-                    && cal.get(Calendar.HOUR_OF_DAY) == 0
-            ) {
-                return "{d '" + SQL_DATE_FORMAT.format(o) + "'}";
+                    && cal.get(Calendar.HOUR_OF_DAY) == 0) {
+                LocalDate localDate = Instant
+                        .ofEpochMilli(((Date) o).getTime())
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate();
+
+                return "{d '" + SQL_DATE_FORMAT.format(localDate) + "'}";
             } else {
-                return "{ts '" + SQL_TIMESTAMP_FORMAT.format(o) + "'}";
+                LocalDateTime localDateTime = ((Date) o).toInstant()
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDateTime();
+                return "{ts '" + SQL_TIMESTAMP_FORMAT.format(localDateTime) + "'}";
             }
-        } else if (o instanceof java.util.Calendar) {
+        } else if (o instanceof Calendar) {
             Calendar cal = (Calendar) o;
             if (cal.get(Calendar.MILLISECOND) == 0
                     && cal.get(Calendar.SECOND) == 0
                     && cal.get(Calendar.MINUTE) == 0
-                    && cal.get(Calendar.HOUR_OF_DAY) == 0
-            ) {
-                return "{d '" + SQL_DATE_FORMAT.format(cal.getTime()) + "'}";
+                    && cal.get(Calendar.HOUR_OF_DAY) == 0) {
+                LocalDate localDate = Instant
+                        .ofEpochMilli(cal.getTimeInMillis())
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate();
+
+                return "{d '" + SQL_DATE_FORMAT.format(localDate) + "'}";
             } else {
-                return "{ts '" + SQL_TIMESTAMP_FORMAT.format(cal.getTime()) + "'}";
+                LocalDateTime localDateTime = cal.toInstant()
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDateTime();
+                return "{ts '" + SQL_TIMESTAMP_FORMAT.format(localDateTime) + "'}";
             }
-        } else if (o instanceof java.sql.Timestamp) {
-            return "{ts '" + o.toString() + "'}";
         } else if (o instanceof Long) {
             return ((Long) o).toString();
         } else if (o instanceof Integer) {
@@ -128,7 +174,8 @@ public class MJdbcTools {
         }
     }
 
-    public static String rewriteStatementWithNamedParameters(String sqlStr, Map<String, Object> parameters) throws Exception {
+    public static String rewriteStatementWithNamedParameters(String sqlStr,
+            Map<String, Object> parameters) throws Exception {
         net.sf.jsqlparser.statement.Statement statement = CCJSqlParserUtil.parse(sqlStr);
         StringBuilder builder = new StringBuilder();
         ExpressionDeParser expressionDeParser = new ExpressionDeParser() {
@@ -141,13 +188,15 @@ public class MJdbcTools {
         expressionDeParser.setSelectVisitor(selectDeParser);
         expressionDeParser.setBuffer(builder);
 
-        StatementDeParser statementDeParser = new StatementDeParser(expressionDeParser, selectDeParser, builder);
+        StatementDeParser statementDeParser =
+                new StatementDeParser(expressionDeParser, selectDeParser, builder);
         statement.accept(statementDeParser);
 
         return builder.toString();
     }
 
-    public static String rewriteStatementWithNamedParameters(String sqlStr, Object... parameters) throws Exception {
+    public static String rewriteStatementWithNamedParameters(String sqlStr, Object... parameters)
+            throws Exception {
         net.sf.jsqlparser.statement.Statement statement = CCJSqlParserUtil.parse(sqlStr);
         StringBuilder builder = new StringBuilder();
         ExpressionDeParser expressionDeParser = new ExpressionDeParser() {
@@ -168,7 +217,8 @@ public class MJdbcTools {
         expressionDeParser.setSelectVisitor(selectDeParser);
         expressionDeParser.setBuffer(builder);
 
-        StatementDeParser statementDeParser = new StatementDeParser(expressionDeParser, selectDeParser, builder);
+        StatementDeParser statementDeParser =
+                new StatementDeParser(expressionDeParser, selectDeParser, builder);
         statement.accept(statementDeParser);
 
         return builder.toString();

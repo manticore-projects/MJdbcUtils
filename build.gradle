@@ -1,67 +1,145 @@
+import se.bjurr.gitchangelog.plugin.gradle.GitChangelogTask
+
 plugins {
-    id 'java'
-    id "com.github.hierynomus.license" version "latest.release"
+    id 'java-library'
+    id 'maven-publish'
+    id 'signing'
+
     id 'jacoco'
-    id "com.github.spotbugs" version "latest.release"
+    id 'com.github.kt3k.coveralls' version "latest.release"
     id 'pmd'
     id 'checkstyle'
-}
+    id "com.github.spotbugs" version "latest.release"
+    id "com.diffplug.spotless" version "latest.release"
 
-group 'com.manticore-projects'
-version '1.0-SNAPSHOT'
-description = 'JDBC extension for Statements with Named Parameters'
-java.sourceCompatibility = JavaVersion.VERSION_1_8
+    id "se.bjurr.gitchangelog.git-changelog-gradle-plugin" version "latest.release"
+    id 'org.hidetake.ssh' version "latest.release"
+
+    id "com.github.hierynomus.license" version "latest.release"
+}
 
 repositories {
     gradlePluginPortal()
     mavenCentral()
-
+    mavenLocal()
     maven {
         url 'https://oss.sonatype.org/content/repositories/snapshots'
     }
 }
 
+configurations {
+    xmlDoclet
+}
+
 dependencies {
-    implementation 'com.github.jsqlparser:jsqlparser:4.+'
-
-    // https://mvnrepository.com/artifact/org.apache.commons/commons-collections4
-    implementation 'org.apache.commons:commons-collections4:4.+'
-
-
+    api 'com.github.jsqlparser:jsqlparser:+'
+    api 'org.apache.commons:commons-collections4:4.+'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.+'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.+'
-
-    // https://mvnrepository.com/artifact/com.h2database/h2
     testImplementation 'com.h2database:h2:2.+'
+    xmlDoclet 'com.manticore-projects.tools:xml-doclet:+'
 }
+
+def getVersion = { boolean considerSnapshot ->
+    Integer major = 0
+    Integer minor = 0
+    Integer patch = null
+    Integer build = null
+    def commit = null
+    def snapshot = ""
+    new ByteArrayOutputStream().withStream { os ->
+        exec {
+            args = [
+                    "--no-pager"
+                    , "describe"
+                    , "--tags"
+                    , "--always"
+                    , "--dirty=-SNAPSHOT"
+            ]
+            executable "git"
+            standardOutput = os
+        }
+        def versionStr = os.toString().trim()
+        def pattern = /(?<major>\d*)\.(?<minor>\d*)(\.(?<patch>\d*))?(-(?<build>\d*)-(?<commit>[a-zA-Z\d]*))?/
+        def matcher = versionStr =~ pattern
+        if (matcher.find()) {
+            major = matcher.group('major') as Integer
+            minor = matcher.group('minor') as Integer
+            patch = matcher.group('patch') as Integer
+            build = matcher.group('build') as Integer
+            commit = matcher.group('commit')
+        }
+
+        if (considerSnapshot && ( versionStr.endsWith('SNAPSHOT') || build!=null) ) {
+            minor++
+            if (patch!=null) patch = 0
+            snapshot = "-SNAPSHOT"
+        }
+    }
+    return patch!=null
+            ? "${major}.${minor}.${patch}${snapshot}"
+            :  "${major}.${minor}${snapshot}"
+}
+version getVersion(true)
+group 'com.manticore-projects.jdbc'
+description = 'Java Library for Named Parameters (e.g. :Customer_Id ) in Queries or DML/DDL statements. '
 
 java {
     withSourcesJar()
     withJavadocJar()
-
-    spotbugs
-    pmd
-
+    // needed for XML-Doclet to work (since Doclet changed again with Java 13)
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(11))
+    }
 }
 
-jacoco {
-    toolVersion = "0.8.7"
+javadoc {
+    if(JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption('html5', true)
+    }
+    options.addBooleanOption("Xdoclint:none", true)
 }
+
+tasks.register('xmldoc', Javadoc) {
+    dependsOn(jar)
+    source = sourceSets.main.allJava
+
+    // beware: Gradle deletes this folder automatically and there is no switch-off
+    destinationDir = reporting.file("xmlDoclet")
+    options.docletpath = configurations.xmlDoclet.files.asType(List)
+    options.doclet = "com.github.markusbernhardt.xmldoclet.XmlDoclet"
+    title = "API $version"
+    options.addBooleanOption("rst", true)
+    options.addBooleanOption("withFloatingToc", true)
+    options.addStringOption("basePackage", "com.manticore.jdbc")
+
+    doLast {
+        copy {
+            from reporting.file("xmlDoclet/javadoc.rst")
+            into "${projectDir}/src/site/sphinx"
+        }
+    }
+}
+
 
 test {
     useJUnitPlatform()
 }
 
 license {
+    header = project.file('LICENSE')
     ext.year = Calendar.getInstance().get(Calendar.YEAR)
     ext.name = 'manticore-projects Co. Ltd.'
     ext.email = 'support@manticore-projects.com'
+
+    strictCheck = false
+    ignoreFailures = true
 }
 
 jacocoTestReport {
     dependsOn test // tests are required to run before generating the report
     reports {
-        xml.required = false
+        xml.required = true
         csv.required = false
         html.outputLocation = layout.buildDirectory.dir('reports/jacoco')
     }
@@ -88,6 +166,11 @@ jacocoTestCoverageVerification {
     }
 }
 
+coveralls {
+    jacocoReportPath 'build/reports/jacoco/test/jacocoTestReport.xml'
+}
+
+
 spotbugsMain {
     reports {
         html {
@@ -100,24 +183,22 @@ spotbugsMain {
 
 spotbugs {
     // fail only on P1 and without the net.sf.jsqlparser.parser.*
-    excludeFilter = file("config/spotBugsExcludeFilter.xml")
+    excludeFilter = file("config/spotbugs/spotBugsExcludeFilter.xml")
     
     // do not run over the test, although we should do that eventually
      spotbugsTest.enabled = false
 }
 
 pmd {
-    consoleOutput = false
-    toolVersion = "6.36.0"
-    
-    sourceSets = [sourceSets.main]
+    consoleOutput = true
+    sourceSets = [sourceSets.main, sourceSets.test]
     
     // clear the ruleset in order to use configured rules only
     ruleSets = []
     
     //rulesMinimumPriority = 1
     
-    ruleSetFiles = files("config/ruleset.xml")
+    ruleSetFiles = files("config/pmd/ruleset.xml")
     
     pmdMain {
         excludes = [
@@ -127,7 +208,6 @@ pmd {
 }
 
 checkstyle {
-    toolVersion "8.45.1"
     sourceSets = [sourceSets.main, sourceSets.test]
     configFile =rootProject.file('config/checkstyle/checkstyle.xml')
 }
@@ -137,4 +217,123 @@ tasks.withType(Checkstyle) {
         xml.required = false
         html.required = true
     }
+}
+
+spotless {
+    // optional: limit format enforcement to just the files changed by this feature branch
+    ratchetFrom 'origin/main'
+
+    format 'misc', {
+        // define the files to apply `misc` to
+        target '*.rst', '*.md', '.gitignore'
+        // define the steps to apply to those files
+        trimTrailingWhitespace()
+        indentWithSpaces(4) // or spaces. Takes an integer argument if you don't like 4
+        endWithNewline()
+    }
+    java {
+        indentWithSpaces(4)
+        eclipse().configFile('config/formatter/eclipse-java-google-style.xml')
+    }
+}
+
+publish {
+    dependsOn(check)
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
+                }
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
+            }
+            pom {
+                name = 'XML Doclet'
+                description = 'Doclet for writing XML file (instead of JavaDoc HTML)'
+                url = 'https://github.com/manticore-projects/xml-doclet'
+                licenses {
+                    license {
+                        name = 'The Apache Software License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'are'
+                        name = 'Andreas Reichel'
+                        email = 'andreas@manticore-projects.com'
+                    }
+                }
+                scm {
+                    connection = 'scm:git@github.com:manticore-projects/MJdbcUtils.git'
+                    developerConnection = 'scm:git@github.com:manticore-projects/MJdbcUtils.git'
+                    url = 'https://github.com/manticore-projects/MJdbcUtils'
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            name "ossrh"
+
+            def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+            def snapshotsRepoUrl= "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            credentials(PasswordCredentials)
+        }
+        maven {
+            name = "GitHubPackages"
+
+            url = uri("https://maven.pkg.github.com/manticore-projects/xml-doclet")
+            credentials(PasswordCredentials)
+        }
+    }
+}
+
+signing {
+    sign publishing.publications.mavenJava
+}
+
+
+remotes {
+    webServer {
+        host = findProperty("${project.name}.host")
+        user = findProperty("${project.name}.username")
+        identity = new File("${System.properties['user.home']}/.ssh/id_rsa")
+    }
+}
+
+tasks.register('upload') {
+    doFirst {
+        if (findProperty("${project.name}.host") == null) {
+            println(
+                    """
+                Property \"${project.name}.host\' not found.
+                Please define \"${project.name}.host\" in the Gradle configuration (e. g. \$HOME/.gradle/gradle.properties.
+                """
+            )
+        }
+    }
+    doLast {
+        ssh.run {
+            session(remotes.webServer) {
+                def versionStable = getVersion(false)
+                execute "mkdir -p download/${project.name}-${versionStable}"
+                for (File file: fileTree(include:['*.jar'], dir:"${project.buildDir}/libs").collect()) {
+                    put from: file, into: "download/${project.name}-${versionStable}"
+                }
+            }
+        }
+    }
+}
+
+tasks.register('gitChangelogTask', GitChangelogTask) {
+    fromRepo = file("$projectDir")
+    file = new File("${projectDir}/src/site/sphinx/changelog.md")
 }
