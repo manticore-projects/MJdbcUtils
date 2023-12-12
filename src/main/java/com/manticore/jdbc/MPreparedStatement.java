@@ -41,7 +41,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class MPreparedStatement implements Closeable {
+public final class MPreparedStatement implements Closeable {
     private final static int DEFAULT_BATCH_SIZE = 24;
     private final PreparedStatement statement;
     private final ParameterMetaData parameterMetaData;

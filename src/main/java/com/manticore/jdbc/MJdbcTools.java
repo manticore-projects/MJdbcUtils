@@ -256,10 +256,11 @@ public class MJdbcTools {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o)
+            if (this == o) {
                 return true;
-            if (o == null || getClass() != o.getClass())
+            } else if (o == null || getClass() != o.getClass()) {
                 return false;
+            }
             ObjectArrayKey that = (ObjectArrayKey) o;
 
             return Arrays.deepEquals(keys, that.keys);
@@ -290,20 +291,20 @@ public class MJdbcTools {
      * function is designed to create columns for each key of the Category Column and to aggregate
      * the values of the Aggregate Column for each Category.
      *
-     * @param rs                  The ResultSet holding the source data with the category values in rows
-     * @param function            Determine what type of aggregate function to use (SUM, COUNT, ...)
+     * @param rs The ResultSet holding the source data with the category values in rows
+     * @param function Determine what type of aggregate function to use (SUM, COUNT, ...)
      * @param aggregateColumnName Specify the column name of the aggregate value
-     * @param categoryColumnName  Identify the column that will be transformed into separate Value
-     *                            Columns
-     * @param categoryFormat      Format the key values into column labels
-     * @param buildTotals         If to insert Total rows below and column on the right side
-     * @param repeatHeader        If to insert the header repeatedly before each category
+     * @param categoryColumnName Identify the column that will be transformed into separate Value
+     *        Columns
+     * @param categoryFormat Format the key values into column labels
+     * @param buildTotals If to insert Total rows below and column on the right side
+     * @param repeatHeader If to insert the header repeatedly before each category
      * @return A 2-dimensional array holding the transformed Column Names and the Data
      */
     @SuppressWarnings({"PMD.ExcessiveMethodLength"})
     public static Object[][] getPivotFromQuery(ResultSet rs, AggregateFunction function,
-                                               String aggregateColumnName, String categoryColumnName, Format categoryFormat,
-                                               boolean buildTotals, boolean repeatHeader) throws SQLException {
+            String aggregateColumnName, String categoryColumnName, Format categoryFormat,
+            boolean buildTotals, boolean repeatHeader) throws SQLException {
         ArrayList<String> columnNames = new ArrayList<>();
         int categoryColumnIndex = -1;
         Class<?> categoryClass = null;
@@ -319,12 +320,14 @@ public class MJdbcTools {
                     categoryColumnIndex = i;
                     categoryClass = Class.forName(metaData.getColumnClassName(i));
                 } catch (ClassNotFoundException ignore) {
+                    // do nothing
                 }
             } else if (columnName.equalsIgnoreCase(aggregateColumnName)) {
                 try {
                     aggregateColumnIndex = i;
                     aggregateClass = Class.forName(metaData.getColumnClassName(i));
                 } catch (ClassNotFoundException ignore) {
+                    // do nothing
                 }
             } else {
                 columnNames.add(columnName);
