@@ -35,7 +35,6 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.text.Format;
-import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -45,9 +44,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Formatter;
 import java.util.GregorianCalendar;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -236,13 +233,12 @@ public class MJdbcTools {
     }
 
     public enum AggregateFunction {
-        SUM
-        , COUNT
+        SUM, COUNT
     }
 
     private static TreeMap<Object, Object> emptyMapFromKeys(TreeSet<Object> keys) {
         TreeMap<Object, Object> map = new TreeMap<>();
-        for (Object k:keys) {
+        for (Object k : keys) {
             map.put(k, null);
         }
         return map;
@@ -253,15 +249,17 @@ public class MJdbcTools {
 
         public ObjectArrayKey(Object[] keys) {
             this.keys = new Comparable[keys.length];
-            for (int i=0; i<keys.length; i++) {
+            for (int i = 0; i < keys.length; i++) {
                 this.keys[i] = (Comparable<?>) keys[i];
             }
         }
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
             ObjectArrayKey that = (ObjectArrayKey) o;
 
             return Arrays.deepEquals(keys, that.keys);
@@ -288,20 +286,24 @@ public class MJdbcTools {
     }
 
     /**
-     * The getPivotFromQuery function takes a ResultSet and converts it into a pivot table.
-     * The function is designed to create columns for each key of the Category Column and to aggregate the values
-     * of the Aggregate Column for each Category.
+     * The getPivotFromQuery function takes a ResultSet and converts it into a pivot table. The
+     * function is designed to create columns for each key of the Category Column and to aggregate
+     * the values of the Aggregate Column for each Category.
      *
-     * @param rs The ResultSet holding the source data with the category values in rows
-     * @param function Determine what type of aggregate function to use (SUM, COUNT, ...)
-     * @param categoryColumnName Identify the column that will be transformed into separate Value Columns
-     * @param categoryFormat Format the key values into column labels
+     * @param rs                  The ResultSet holding the source data with the category values in rows
+     * @param function            Determine what type of aggregate function to use (SUM, COUNT, ...)
      * @param aggregateColumnName Specify the column name of the aggregate value
-     *
-     * @return A 2-dimensional array holding the Column Names and the Data
-     *
+     * @param categoryColumnName  Identify the column that will be transformed into separate Value
+     *                            Columns
+     * @param categoryFormat      Format the key values into column labels
+     * @param buildTotals         If to insert Total rows below and column on the right side
+     * @param repeatHeader        If to insert the header repeatedly before each category
+     * @return A 2-dimensional array holding the transformed Column Names and the Data
      */
-    public static Object[][] getPivotFromQuery(ResultSet rs, AggregateFunction function, String categoryColumnName, String aggregateColumnName, Format categoryFormat) throws SQLException {
+    @SuppressWarnings({"PMD.ExcessiveMethodLength"})
+    public static Object[][] getPivotFromQuery(ResultSet rs, AggregateFunction function,
+                                               String aggregateColumnName, String categoryColumnName, Format categoryFormat,
+                                               boolean buildTotals, boolean repeatHeader) throws SQLException {
         ArrayList<String> columnNames = new ArrayList<>();
         int categoryColumnIndex = -1;
         Class<?> categoryClass = null;
@@ -310,26 +312,26 @@ public class MJdbcTools {
 
         ResultSetMetaData metaData = rs.getMetaData();
         int columnCount = metaData.getColumnCount();
-        for (int i=1; i<=columnCount; i++) {
-            String columnName =  metaData.getColumnName(i);
+        for (int i = 1; i <= columnCount; i++) {
+            String columnName = metaData.getColumnName(i);
             if (columnName.equalsIgnoreCase(categoryColumnName)) {
                 try {
                     categoryColumnIndex = i;
-                    categoryClass = Class.forName( metaData.getColumnClassName(i));
+                    categoryClass = Class.forName(metaData.getColumnClassName(i));
                 } catch (ClassNotFoundException ignore) {
                 }
             } else if (columnName.equalsIgnoreCase(aggregateColumnName)) {
                 try {
                     aggregateColumnIndex = i;
-                    aggregateClass = Class.forName( metaData.getColumnClassName(i));
+                    aggregateClass = Class.forName(metaData.getColumnClassName(i));
                 } catch (ClassNotFoundException ignore) {
                 }
             } else {
-                columnNames.add( columnName );
+                columnNames.add(columnName);
             }
         }
 
-        if (categoryClass==null || aggregateClass==null) {
+        if (categoryClass == null || aggregateClass == null) {
             throw new RuntimeException("Unable to determine the Aggregate or Category Classes.");
         }
 
@@ -344,19 +346,20 @@ public class MJdbcTools {
             keyValue = null;
             aggregateValue = null;
 
-            for (int i = 1; i<=columnCount; i++) {
+            for (int i = 1; i <= columnCount; i++) {
                 Object value = rs.getObject(i);
 
-                if (i==categoryColumnIndex) {
+                if (i == categoryColumnIndex) {
                     keyValue = value;
-                    // if we meet the key first time, we need to register it and extend the aggregated data maps
+                    // if we meet the key first time, we need to register it and extend the
+                    // aggregated data maps
                     if (!keys.contains(keyValue)) {
                         keys.add(keyValue);
-                        for (TreeMap<Object, Object> aggregatedData: data.values()) {
+                        for (TreeMap<Object, Object> aggregatedData : data.values()) {
                             aggregatedData.put(keyValue, null);
                         }
                     }
-                } else if (i==aggregateColumnIndex) {
+                } else if (i == aggregateColumnIndex) {
                     aggregateValue = value;
                 } else {
                     columnValues.add(rs.getObject(i));
@@ -365,7 +368,8 @@ public class MJdbcTools {
 
             ObjectArrayKey objectKey = new ObjectArrayKey(columnValues.toArray());
 
-            final TreeMap<Object, Object> rowData = data.getOrDefault( objectKey, emptyMapFromKeys(keys));
+            final TreeMap<Object, Object> rowData =
+                    data.getOrDefault(objectKey, emptyMapFromKeys(keys));
             if (aggregateClass.equals(BigDecimal.class)) {
                 BigDecimal a = (BigDecimal) rowData.get(keyValue);
                 BigDecimal b = (BigDecimal) aggregateValue;
@@ -373,43 +377,95 @@ public class MJdbcTools {
                 if (function == AggregateFunction.SUM) {
                     if (a == null) {
                         rowData.put(keyValue, b);
-                    }
-                    else if (b != null) {
+                    } else if (b != null) {
                         rowData.put(keyValue, a.add(b));
                     }
                 } else {
-                    throw new UnsupportedOperationException("Only SUM is supported right now, sorry!");
+                    throw new UnsupportedOperationException(
+                            "Only SUM is supported right now, sorry!");
                 }
             } else {
-                throw new UnsupportedOperationException("Only BigDecimals are supported right now, sorry!");
+                throw new UnsupportedOperationException(
+                        "Only BigDecimals are supported right now, sorry!");
             }
 
             data.put(objectKey, rowData);
         }
 
         // build the final data cube
-        for (Object k:keys) {
-            columnNames.add( categoryFormat!= null ? categoryFormat.format(k) : k.toString());
+        for (Object k : keys) {
+            columnNames.add(categoryFormat != null ? categoryFormat.format(k) : k.toString());
+        }
+        if (buildTotals) {
+            columnNames.add("Total");
         }
 
-        Object[][] resultData = new Object[data.size()][columnNames.size()];
+        ArrayList<Object[]> resultData = new ArrayList<>();
+        BigDecimal[] subTotals = new BigDecimal[keys.size() + 1];
+        Arrays.fill(subTotals, BigDecimal.ZERO);
+
         int r = 0;
+        Object mainCategory = null;
         for (Map.Entry<ObjectArrayKey, TreeMap<Object, Object>> e : data.entrySet()) {
-            int c=0;
-            for (Object k: e.getKey().keys) {
-                resultData[r][c] = k;
+            Object[] rowData = new Object[columnNames.size()];
+
+            int c = 0;
+            for (Object k : e.getKey().keys) {
+                rowData[c] = k;
                 c++;
             }
-            for (Object k: keys) {
-                resultData[r][c] = e.getValue().get(k);
-                c++;
+
+            if (buildTotals && !rowData[0].equals(mainCategory)) {
+                if (mainCategory != null) {
+                    Object[] totalRowData = new Object[columnNames.size()];
+                    totalRowData[0] = mainCategory;
+                    totalRowData[e.getKey().keys.length - 2] = "Total";
+
+                    System.arraycopy(subTotals, 0, totalRowData, e.getKey().keys.length,
+                            keys.size() + 1);
+                    resultData.add(totalRowData);
+                    resultData.add(new Object[columnNames.size()]);
+                }
+
+                mainCategory = rowData[0];
+                Arrays.fill(subTotals, BigDecimal.ZERO);
             }
+
+            BigDecimal rowTotal = BigDecimal.ZERO;
+            int c1 = 0;
+            for (Object k : keys) {
+                rowData[c] = e.getValue().get(k);
+
+                if (buildTotals && rowData[c] != null) {
+                    rowTotal = rowTotal.add((BigDecimal) rowData[c]);
+                    subTotals[c1] = subTotals[c1].add((BigDecimal) rowData[c]);
+                }
+                c++;
+                c1++;
+            }
+            if (buildTotals) {
+                rowData[c] = rowTotal;
+                subTotals[c1] = subTotals[c1].add(rowTotal);
+            }
+
+            resultData.add(rowData);
             r++;
+
+            // totals after the last row
+            if (buildTotals && r == data.size()) {
+                Object[] totalRowData = new Object[columnNames.size()];
+                totalRowData[0] = mainCategory;
+                totalRowData[e.getKey().keys.length - 2] = "Total";
+                System.arraycopy(subTotals, 0, totalRowData, e.getKey().keys.length,
+                        keys.size() + 1);
+                resultData.add(totalRowData);
+            }
         }
 
         return new Object[][] {
-            columnNames.toArray(new String[columnNames.size()])
-            , resultData
+                columnNames.toArray(new String[columnNames.size()]),
+                resultData.toArray(new Object[resultData.size()][])
         };
     }
+
 }
