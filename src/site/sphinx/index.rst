@@ -7,8 +7,8 @@ MJdbcUtils - JDBC Named Parameter Tools
    :hidden:
 
    usage
-   Changelog <./changelog.md>
-   Javadoc <./javadoc.rst>
+   Changelog <changelog.rst>
+   Java API <javadoc.rst>
 
 
 .. image:: https://badgen.net/maven/v/maven-central/com.manticore-projects.jdbc/MJdbcUtils
