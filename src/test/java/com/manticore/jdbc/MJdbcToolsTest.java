@@ -24,8 +24,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.sql.Connection;
@@ -48,6 +46,18 @@ class MJdbcToolsTest {
         String sqlStr = "select * from table_a where field_a = :param1";
         String rewrittenSqlStr = MJdbcTools.rewriteStatementWithNamedParameters(sqlStr, parameters);
         String correctSqlStr = "SELECT * FROM table_a WHERE field_a = ''' or ''A'' <> ''B'";
+
+        Assertions.assertEquals(correctSqlStr, rewrittenSqlStr);
+    }
+
+    @Test
+    void testBooleanIssue2() throws Exception {
+        HashMap<String, Object> parameters = new HashMap<>();
+        parameters.put("param1", Boolean.TRUE);
+
+        String sqlStr = "select * from table_a where field_a = :param1";
+        String rewrittenSqlStr = MJdbcTools.rewriteStatementWithNamedParameters(sqlStr, parameters);
+        String correctSqlStr = "SELECT * FROM table_a WHERE field_a = TRUE";
 
         Assertions.assertEquals(correctSqlStr, rewrittenSqlStr);
     }

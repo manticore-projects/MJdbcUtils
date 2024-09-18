@@ -172,6 +172,8 @@ public class MJdbcTools {
             return o.toString();
         } else if (o instanceof BigDecimal) {
             return ((BigDecimal) o).toPlainString();
+        } else if (o instanceof Boolean) {
+            return (Boolean) o ? "TRUE" : "FALSE";
         } else if (o instanceof String) {
             String s = (String) o;
             s = s.replace("'", "''");
@@ -187,8 +189,10 @@ public class MJdbcTools {
         net.sf.jsqlparser.statement.Statement statement = CCJSqlParserUtil.parse(sqlStr);
         StringBuilder builder = new StringBuilder();
         ExpressionDeParser expressionDeParser = new ExpressionDeParser() {
-            public void visit(JdbcNamedParameter parameter) {
+           @Override
+            public <S> StringBuilder visit(JdbcNamedParameter parameter, S context) {
                 buffer.append(getParameterStr(parameters.get(parameter.getName())));
+                return buffer;
             }
         };
 
@@ -210,14 +214,18 @@ public class MJdbcTools {
         ExpressionDeParser expressionDeParser = new ExpressionDeParser() {
             int i = 0;
 
-            public void visit(JdbcParameter parameter) {
+            @Override
+            public <S> StringBuilder visit(JdbcParameter parameter, S context) {
                 buffer.append(getParameterStr(parameters[i]));
                 i++;
+                return buffer;
             }
 
-            public void visit(JdbcNamedParameter parameter) {
+            @Override
+            public <S> StringBuilder visit(JdbcNamedParameter parameter, S context) {
                 buffer.append(getParameterStr(parameters[i]));
                 i++;
+                return buffer;
             }
         };
 
