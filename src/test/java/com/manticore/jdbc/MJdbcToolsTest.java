@@ -23,6 +23,11 @@ import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -32,6 +37,7 @@ import java.text.DateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.Objects;
 
 class MJdbcToolsTest {
     @Test
@@ -162,10 +168,14 @@ class MJdbcToolsTest {
             }
 
             try (ResultSet rs = st.executeQuery("SELECT * FROM rep_comprehensive_income");) {
-                Object[][] data = MJdbcTools.getPivotFromQuery(rs, MJdbcTools.AggregateFunction.SUM,
-                                                               "amount",
-                                                               "value_date",
-                                                               DateFormat.getDateInstance(DateFormat.SHORT, Locale.US), true, true);
+                Object[][] data = MJdbcTools.getPivotFromQuery(
+                        rs,
+                        MJdbcTools.AggregateFunction.SUM,
+                       "amount",
+                       "value_date",
+                        DateFormat.getDateInstance(DateFormat.SHORT, Locale.US),
+                       true,
+                       true);
 
                 for (String columnName : (String[]) data[0]) {
                     builder.append(columnName).append(";");
@@ -181,5 +191,54 @@ class MJdbcToolsTest {
             }
         }
         Assertions.assertEquals(expectedCSV, builder.toString());
+    }
+
+    @Test
+    void testDataCube() throws Exception {
+        StringBuilder builder = new StringBuilder();
+        try (
+                InputStreamReader reader = new InputStreamReader(
+                    Objects.requireNonNull(MJdbcToolsTest.class.getResourceAsStream("/assets_over_time.sql"))
+                    , Charset.defaultCharset()
+                );
+                BufferedReader bufferedReader = new BufferedReader(reader);
+        ) {
+            String line;
+            while ((line=bufferedReader.readLine())!=null) {
+                builder.append(line).append("\n");
+            }
+        }
+
+        try (Connection conn =
+                        DriverManager.getConnection("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "");
+                Statement st = conn.createStatement();
+        ) {
+            for (net.sf.jsqlparser.statement.Statement parsed : CCJSqlParserUtil.parseStatements(builder.toString())) {
+                st.execute(parsed.toString());
+            }
+
+            try (ResultSet rs = st.executeQuery("SELECT * FROM cfe.assets_over_time");) {
+                Object[][] data = MJdbcTools.getPivotFromQuery(
+                        rs,
+                        MJdbcTools.AggregateFunction.SUM,
+                        "amount",
+                        "value_date",
+                        DateFormat.getDateInstance(DateFormat.SHORT, Locale.US),
+                        true,
+                        true);
+
+                for (String columnName : (String[]) data[0]) {
+                    builder.append(columnName).append(";");
+                }
+                builder.append("\n");
+
+                for (Object[] rowData : (Object[][]) data[1]) {
+                    for (Object value : rowData) {
+                        builder.append(value != null ? value + ";" : ";");
+                    }
+                    builder.append("\n");
+                }
+            }
+        }
     }
 }
