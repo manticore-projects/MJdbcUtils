@@ -2,6 +2,15 @@
 
 Changelog of MJdbcUtils.
 
+## 1.2.0 (2024-09-18)
+
+### Features
+
+-  Adopt JSQLParser 5 features ([ca326](https://github.com/manticore-projects/MJdbcUtils/commit/ca32673c71eb810) manticore-projects)  
+-  build Totals ([a6bd0](https://github.com/manticore-projects/MJdbcUtils/commit/a6bd09b5d3f6c56) Andreas Reichel)  
+-  Pivot Tables from ResultSet ([d653e](https://github.com/manticore-projects/MJdbcUtils/commit/d653e321db06440) Andreas Reichel)  
+-  add META Tags and Sitemap ([0244b](https://github.com/manticore-projects/MJdbcUtils/commit/0244bca523c323c) Andreas Reichel)  
+
 ## 1.1.0 (2023-06-04)
 
 ### Other changes
