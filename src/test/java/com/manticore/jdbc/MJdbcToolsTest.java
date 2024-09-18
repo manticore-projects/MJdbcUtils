@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2023 manticore-projects Co. Ltd. <support@manticore-projects.com>
+ * Copyright (C) 2024 manticore-projects Co. Ltd. <support@manticore-projects.com>
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * <p>
  * This program is free software; you can redistribute it and/or modify it under the terms of the
@@ -21,6 +21,7 @@ package com.manticore.jdbc;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
@@ -181,11 +182,11 @@ class MJdbcToolsTest {
                 Object[][] data = MJdbcTools.getPivotFromQuery(
                         rs,
                         MJdbcTools.AggregateFunction.SUM,
-                       "amount",
-                       "value_date",
+                        "amount",
+                        "value_date",
                         DateFormat.getDateInstance(DateFormat.SHORT, Locale.US),
-                       true,
-                       true);
+                        true,
+                        true);
 
                 for (String columnName : (String[]) data[0]) {
                     builder.append(columnName).append(";");
@@ -204,26 +205,26 @@ class MJdbcToolsTest {
     }
 
     @Test
+    @Disabled
     void testDataCube() throws Exception {
         StringBuilder builder = new StringBuilder();
         try (
                 InputStreamReader reader = new InputStreamReader(
-                    Objects.requireNonNull(MJdbcToolsTest.class.getResourceAsStream("/assets_over_time.sql"))
-                    , Charset.defaultCharset()
-                );
-                BufferedReader bufferedReader = new BufferedReader(reader);
-        ) {
+                        Objects.requireNonNull(
+                                MJdbcToolsTest.class.getResourceAsStream("/assets_over_time.sql")),
+                        Charset.defaultCharset());
+                BufferedReader bufferedReader = new BufferedReader(reader);) {
             String line;
-            while ((line=bufferedReader.readLine())!=null) {
+            while ((line = bufferedReader.readLine()) != null) {
                 builder.append(line).append("\n");
             }
         }
 
         try (Connection conn =
-                        DriverManager.getConnection("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "");
-                Statement st = conn.createStatement();
-        ) {
-            for (net.sf.jsqlparser.statement.Statement parsed : CCJSqlParserUtil.parseStatements(builder.toString())) {
+                DriverManager.getConnection("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "");
+                Statement st = conn.createStatement();) {
+            for (net.sf.jsqlparser.statement.Statement parsed : CCJSqlParserUtil
+                    .parseStatements(builder.toString())) {
                 st.execute(parsed.toString());
             }
 

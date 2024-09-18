@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2023 manticore-projects Co. Ltd. <support@manticore-projects.com>
+ * Copyright (C) 2024 manticore-projects Co. Ltd. <support@manticore-projects.com>
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * <p>
  * This program is free software; you can redistribute it and/or modify it under the terms of the
@@ -58,7 +58,8 @@ public final class MPreparedStatement implements Closeable {
         ExpressionDeParser expressionDeParser = new ExpressionDeParser() {
             int i = 1;
 
-            public void visit(JdbcParameter parameter) {
+            @Override
+            public <S> StringBuilder visit(JdbcParameter parameter, S context) {
                 String id = ":" + (i + 1);
                 if (!parameters.containsKey(id)) {
                     parameters.put(id, new MNamedParameter(id, i));
@@ -68,9 +69,11 @@ public final class MPreparedStatement implements Closeable {
 
                 buffer.append("?");
                 i++;
+                return buffer;
             }
 
-            public void visit(JdbcNamedParameter parameter) {
+            @Override
+            public <S> StringBuilder visit(JdbcNamedParameter parameter, S context) {
                 String id = parameter.getName();
                 if (!parameters.containsKey(id)) {
                     parameters.put(id, new MNamedParameter(id, i));
@@ -80,6 +83,8 @@ public final class MPreparedStatement implements Closeable {
 
                 buffer.append("?");
                 i++;
+
+                return buffer;
             }
         };
 

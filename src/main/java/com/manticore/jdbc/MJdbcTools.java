@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2023 manticore-projects Co. Ltd. <support@manticore-projects.com>
+ * Copyright (C) 2024 manticore-projects Co. Ltd. <support@manticore-projects.com>
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * <p>
  * This program is free software; you can redistribute it and/or modify it under the terms of the
@@ -189,7 +189,7 @@ public class MJdbcTools {
         net.sf.jsqlparser.statement.Statement statement = CCJSqlParserUtil.parse(sqlStr);
         StringBuilder builder = new StringBuilder();
         ExpressionDeParser expressionDeParser = new ExpressionDeParser() {
-           @Override
+            @Override
             public <S> StringBuilder visit(JdbcNamedParameter parameter, S context) {
                 buffer.append(getParameterStr(parameters.get(parameter.getName())));
                 return buffer;

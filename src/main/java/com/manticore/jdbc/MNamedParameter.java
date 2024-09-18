@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2023 manticore-projects Co. Ltd. <support@manticore-projects.com>
+ * Copyright (C) 2024 manticore-projects Co. Ltd. <support@manticore-projects.com>
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * <p>
  * This program is free software; you can redistribute it and/or modify it under the terms of the
