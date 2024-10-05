@@ -10,7 +10,7 @@ plugins {
     id 'pmd'
     id 'checkstyle'
 
-    id "se.bjurr.gitchangelog.git-changelog-gradle-plugin" version "latest.release"
+    id "se.bjurr.gitchangelog.git-changelog-gradle-plugin" version "2.0.0" // later depends on JDK17
     id "com.diffplug.spotless" version "latest.release"
     id "com.github.hierynomus.license" version "latest.release"
 }
