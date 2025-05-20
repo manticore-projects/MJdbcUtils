@@ -10,7 +10,7 @@ plugins {
     id 'pmd'
     id 'checkstyle'
 
-    id "se.bjurr.gitchangelog.git-changelog-gradle-plugin" version "2.0.0" // later depends on JDK17
+    id "se.bjurr.gitchangelog.git-changelog-gradle-plugin" version "latest.release"
     id "com.diffplug.spotless" version "latest.release"
     id "com.github.hierynomus.license" version "latest.release"
 }
@@ -29,12 +29,12 @@ configurations {
 }
 
 dependencies {
-    api 'com.github.jsqlparser:jsqlparser:+'
+    api 'com.github.jsqlparser:jsqlparser:5.3+'
     api 'org.apache.commons:commons-collections4:4.+'
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.+'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.+'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
     testImplementation 'com.h2database:h2:2.+'
-    xmlDoclet 'com.manticore-projects.tools:xml-doclet:+'
+    xmlDoclet 'com.manticore-projects.tools:xml-doclet:2.+'
 }
 
 def getVersion = { boolean considerSnapshot ->
@@ -42,42 +42,38 @@ def getVersion = { boolean considerSnapshot ->
     Integer minor = 0
     Integer patch = null
     Integer build = null
-    def commit = null
-    def snapshot = ""
-    new ByteArrayOutputStream().withStream { os ->
-        exec {
-            args = [
-                    "--no-pager"
-                    , "describe"
-                    , "--tags"
-                    , "--always"
-                    , "--dirty=-SNAPSHOT"
-            ]
-            executable "git"
-            standardOutput = os
-        }
-        def versionStr = os.toString().trim()
-        def pattern = /(?<major>\d*)\.(?<minor>\d*)(\.(?<patch>\d*))?(-(?<build>\d*)-(?<commit>[a-zA-Z\d]*))?/
-        def matcher = versionStr =~ pattern
-        if (matcher.find()) {
-            major = matcher.group('major') as Integer
-            minor = matcher.group('minor') as Integer
-            patch = matcher.group('patch') as Integer
-            build = matcher.group('build') as Integer
-            commit = matcher.group('commit')
-        }
+    String commit = null
+    String snapshot = ""
 
-        if (considerSnapshot && ( versionStr.endsWith('SNAPSHOT') || build!=null) ) {
-            minor++
-            if (patch!=null) patch = 0
-            snapshot = "-SNAPSHOT"
-        }
+    def versionStr = providers.exec {
+        commandLine "git", "--no-pager", "-C", project.projectDir,  "describe", "--tags", "--always", "--dirty=-SNAPSHOT"
+    }.standardOutput.asText.get().trim()
+
+    def pattern = /(?<major>\d*)\.(?<minor>\d*)(\.(?<patch>\d*))?(-(?<build>\d*)-(?<commit>[a-zA-Z\d]*))?/
+    def matcher = versionStr =~ pattern
+
+    if (matcher.find()) {
+        major = matcher.group('major') as Integer ?: 0
+        minor = matcher.group('minor') as Integer ?: 0
+        patch = matcher.group('patch') as Integer ?: null
+        build = matcher.group('build') as Integer ?: null
+        commit = matcher.group('commit') ?: null
     }
-    return patch!=null
+
+    if (considerSnapshot && (versionStr.endsWith('SNAPSHOT') || build != null)) {
+        minor++
+        if (patch != null) patch = 0
+        snapshot = "-SNAPSHOT"
+    }
+
+    return patch != null
             ? "${major}.${minor}.${patch}${snapshot}"
-            :  "${major}.${minor}${snapshot}"
+            : "${major}.${minor}${snapshot}"
 }
-version getVersion(true)
+
+// for publishing a release, call Gradle with Environment Variable RELEASE:
+// RELEASE=true gradle :publish
+version = getVersion( !System.getenv("RELEASE") )
 group 'com.manticore-projects.jdbc'
 description = 'Java Library for Named Parameters (e.g. :Customer_Id ) in Queries or DML/DDL statements.'
 
@@ -86,9 +82,8 @@ java {
     withJavadocJar()
     sourceCompatibility(JavaVersion.VERSION_11)
     targetCompatibility(JavaVersion.VERSION_11)
-    // needed for XML-Doclet to work (since Doclet changed again with Java 13)
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(11))
+        languageVersion.set(JavaLanguageVersion.of(17))
     }
 }
 
@@ -105,8 +100,8 @@ tasks.register('xmldoc', Javadoc) {
 
     // beware: Gradle deletes this folder automatically and there is no switch-off
     destinationDir = reporting.file("xmlDoclet")
-    options.docletpath = configurations.xmlDoclet.files.asType(List)
-    options.doclet = "com.github.markusbernhardt.xmldoclet.XmlDoclet"
+    options.docletpath = configurations.xmlDoclet.files as List
+    options.doclet = "com.manticore.tools.xmldoclet.XmlDoclet"
     title = "API $version"
     options.addBooleanOption("rst", true)
     options.addBooleanOption("withFloatingToc", true)
@@ -206,16 +201,16 @@ spotless {
 
         // define the steps to apply to those files
         trimTrailingWhitespace()
-        indentWithSpaces(4) // or spaces. Takes an integer argument if you don't like 4
+        leadingTabsToSpaces(4) // or spaces. Takes an integer argument if you don't like 4
         endWithNewline()
     }
     java {
-        indentWithSpaces(4)
+        leadingTabsToSpaces(4)
         eclipse().configFile('config/formatter/eclipse-java-google-style.xml')
     }
 }
 
-tasks.withType(Checkstyle) {
+tasks.withType(Checkstyle).configureEach {
     reports {
         xml.required = false
         html.required = true

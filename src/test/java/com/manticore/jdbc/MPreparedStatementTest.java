@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2024 manticore-projects Co. Ltd. <support@manticore-projects.com>
+ * Copyright (C) 2025 manticore-projects Co. Ltd. <support@manticore-projects.com>
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * <p>
  * This program is free software; you can redistribute it and/or modify it under the terms of the
@@ -96,16 +96,9 @@ public class MPreparedStatementTest {
 
         Map<String, Object> parameters =
                 toMap(
-                        "a", 1
-                        , "b", "Test String"
-                        , "c", new Date()
-                        , "d", new GregorianCalendar()
-                        , "e", LocalDate.now()
-                        , "f", new Date()
-                        , "g", new GregorianCalendar()
-                        , "h", LocalDate.now()
-                        , "i", "0.12345"
-                );
+                        "a", 1, "b", "Test String", "c", new Date(), "d", new GregorianCalendar(),
+                        "e", LocalDate.now(), "f", new Date(), "g", new GregorianCalendar(), "h",
+                        LocalDate.now(), "i", "0.12345");
 
         Assertions.assertDoesNotThrow(new Executable() {
             @Override
@@ -138,16 +131,9 @@ public class MPreparedStatementTest {
 
         Map<String, Object> parameters =
                 toMap(
-                        "a", 1
-                        , "b", "Test String"
-                        , "c", new Date()
-                        , "d", new GregorianCalendar()
-                        , "e", LocalDate.now()
-                        , "f", new Date()
-                        , "g", new GregorianCalendar()
-                        , "h", LocalDate.now()
-                        , "i", "0.12345"
-                );
+                        "a", 1, "b", "Test String", "c", new Date(), "d", new GregorianCalendar(),
+                        "e", LocalDate.now(), "f", new Date(), "g", new GregorianCalendar(), "h",
+                        LocalDate.now(), "i", "0.12345");
 
         Assertions.assertDoesNotThrow(new Executable() {
             @Override

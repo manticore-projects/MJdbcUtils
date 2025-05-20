@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2024 manticore-projects Co. Ltd. <support@manticore-projects.com>
+ * Copyright (C) 2025 manticore-projects Co. Ltd. <support@manticore-projects.com>
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * <p>
  * This program is free software; you can redistribute it and/or modify it under the terms of the
@@ -67,9 +67,9 @@ public final class MPreparedStatement implements Closeable {
                     parameters.get(id).add(i);
                 }
 
-                buffer.append("?");
+                builder.append("?");
                 i++;
-                return buffer;
+                return builder;
             }
 
             @Override
@@ -81,16 +81,16 @@ public final class MPreparedStatement implements Closeable {
                     parameters.get(id).add(i);
                 }
 
-                buffer.append("?");
+                builder.append("?");
                 i++;
 
-                return buffer;
+                return builder;
             }
         };
 
         SelectDeParser selectDeParser = new SelectDeParser(expressionDeParser, builder);
         expressionDeParser.setSelectVisitor(selectDeParser);
-        expressionDeParser.setBuffer(builder);
+        expressionDeParser.setBuilder(builder);
 
         StatementDeParser statementDeParser =
                 new StatementDeParser(expressionDeParser, selectDeParser, builder);
