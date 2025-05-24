@@ -19,3 +19,5 @@ src/site/sphinx/changelog.rst
 src/site/sphinx/javadoc.rst
 
 src/site/sphinx/changelog.md
+/src/site/sphinx/javadoc_snapshot.rst
+/src/site/sphinx/javadoc_stable.rst

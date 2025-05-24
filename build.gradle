@@ -1,4 +1,11 @@
 import se.bjurr.gitchangelog.plugin.gradle.GitChangelogTask
+import com.nwalsh.gradle.saxon.SaxonXsltTask
+
+buildscript {
+    dependencies {
+        classpath group: 'net.sf.saxon', name: 'Saxon-HE', version: 'latest.release'
+    }
+}
 
 plugins {
     id 'java-library'
@@ -13,12 +20,13 @@ plugins {
     id "se.bjurr.gitchangelog.git-changelog-gradle-plugin" version "latest.release"
     id "com.diffplug.spotless" version "latest.release"
     id "com.github.hierynomus.license" version "latest.release"
+    id "com.nwalsh.gradle.saxon.saxon-gradle" version "latest.release"
+    id 'biz.aQute.bnd.builder' version "latest.release"
 }
 
 repositories {
-    gradlePluginPortal()
-    mavenCentral()
     mavenLocal()
+    mavenCentral()
     maven {
         url 'https://oss.sonatype.org/content/repositories/snapshots'
     }
@@ -34,7 +42,7 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
     testImplementation 'com.h2database:h2:2.+'
-    xmlDoclet 'com.manticore-projects.tools:xml-doclet:2.+'
+    xmlDoclet 'com.manticore-projects.tools:xml-doclet:+'
 }
 
 def getVersion = { boolean considerSnapshot ->
@@ -95,22 +103,35 @@ javadoc {
 }
 
 tasks.register('xmldoc', Javadoc) {
-    dependsOn(jar)
-    source = sourceSets.main.allJava
+    def outFile =  reporting.file(
+            version.endsWith("-SNAPSHOT")
+                    ? "xmlDoclet/javadoc_snapshot.xml"
+                    : "xmlDoclet/javadoc_stable.xml"
+    )
 
-    // beware: Gradle deletes this folder automatically and there is no switch-off
+    def rstFile =  reporting.file(
+            version.endsWith("-SNAPSHOT")
+                    ? "xmlDoclet/javadoc_snapshot.rst"
+                    : "xmlDoclet/javadoc_stable.rst"
+    )
+
+    source = sourceSets.main.allJava
+    classpath = sourceSets.main.runtimeClasspath
+
+    title = "API $version"
     destinationDir = reporting.file("xmlDoclet")
     options.docletpath = configurations.xmlDoclet.files as List
     options.doclet = "com.manticore.tools.xmldoclet.XmlDoclet"
-    title = "API $version"
     options.addBooleanOption("rst", true)
     options.addBooleanOption("withFloatingToc", true)
     options.addStringOption("basePackage", "com.manticore.jdbc")
+    options.addStringOption("filename", outFile.getName())
 
+    dependsOn(compileJava)
     doLast {
         copy {
-            from reporting.file("xmlDoclet/javadoc.rst")
-            into "${projectDir}/src/site/sphinx"
+            from rstFile
+            into layout.projectDirectory.dir("src/site/sphinx/").asFile
         }
     }
 }
