@@ -10,7 +10,7 @@ plugins {
     id 'pmd'
     id 'checkstyle'
 
-    id "se.bjurr.gitchangelog.git-changelog-gradle-plugin" version "2.0.0" // later depends on JDK17
+    id "se.bjurr.gitchangelog.git-changelog-gradle-plugin" version "latest.release"
     id "com.diffplug.spotless" version "latest.release"
     id "com.github.hierynomus.license" version "latest.release"
 }
@@ -80,7 +80,7 @@ java {
     withSourcesJar()
     withJavadocJar()
     sourceCompatibility(JavaVersion.VERSION_11)
-    targetCompatibility(JavaVersion.VERSION_11)
+    targetCompatibility(JavaVersion.VERSION_17)
     // needed for XML-Doclet to work (since Doclet changed again with Java 13)
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(17))
@@ -277,7 +277,40 @@ signing {
 
 
 
+
 tasks.register('gitChangelogTask', GitChangelogTask) {
-    fromRepo = file("$projectDir")
-    file = new File("${projectDir}/src/site/sphinx/changelog.md")
+    fromRepo.set(file("$projectDir").toString())
+    file.set(new File("${projectDir}/src/site/sphinx/changelog.rst"))
+
+    // switch off the formatter since the indentation matters for Mark-down
+    // @formatter:off
+    templateContent.set("""
+************************
+Changelog
+************************
+
+
+{{#tags}}
+{{#ifMatches name "^Unreleased.*"}}
+Latest Changes since |JAVA_FPNG_VERSION|
+{{/ifMatches}}
+{{#ifMatches name "^(?!Unreleased).*"}}
+Version {{name}}
+{{/ifMatches}}
+=============================================================
+
+ {{#issues}}
+
+  {{#commits}}
+   {{#ifMatches messageTitle "^(?!Merge).*"}}
+  * **{{{messageTitle}}}**
+    
+    {{authorName}}, {{commitDate}}
+   {{/ifMatches}}
+  {{/commits}}
+
+ {{/issues}}
+{{/tags}}
+""")
+    // @formatter:on
 }

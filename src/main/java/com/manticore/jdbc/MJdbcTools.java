@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2024 manticore-projects Co. Ltd. <support@manticore-projects.com>
+ * Copyright (C) 2026 manticore-projects Co. Ltd. <support@manticore-projects.com>
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * <p>
  * This program is free software; you can redistribute it and/or modify it under the terms of the
@@ -76,7 +76,7 @@ public class MJdbcTools {
                 .ofEpochMilli(d.getTime())
                 .atZone(ZoneId.systemDefault())
                 .toLocalDate();
-        return "{d '" + MJdbcTools.SQL_DATE_FORMAT.format(localDate) + "'}";
+        return "{d '" + SQL_DATE_FORMAT.format(localDate) + "'}";
     }
 
     public static String getSQLDateStr(Calendar c) {
@@ -87,14 +87,14 @@ public class MJdbcTools {
         LocalDateTime localDateTime = d.toInstant()
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime();
-        return "{ts '" + MJdbcTools.SQL_TIMESTAMP_FORMAT.format(localDateTime) + "'}";
+        return "{ts '" + SQL_TIMESTAMP_FORMAT.format(localDateTime) + "'}";
     }
 
     public static String getSQLDateTimeStr(java.sql.Timestamp ts) {
         LocalDateTime localDateTime = ts.toInstant()
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime();
-        return "{ts '" + MJdbcTools.SQL_TIMESTAMP_FORMAT.format(localDateTime) + "'}";
+        return "{ts '" + SQL_TIMESTAMP_FORMAT.format(localDateTime) + "'}";
     }
 
     public static String getSQLDateTimeStr(Calendar c) {
