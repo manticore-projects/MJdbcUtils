@@ -1,0 +1,535 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<root>
+    <package name="com.manticore.jdbc">
+        <enum name="AggregateFunction" qualified="com.manticore.jdbc.MJdbcTools.AggregateFunction" scope="public">
+            <class qualified="java.lang.Enum&lt;com.manticore.jdbc.MJdbcTools.AggregateFunction&gt;">
+                <generic qualified="com.manticore.jdbc.MJdbcTools.AggregateFunction"/>
+            </class>
+            <constant name="SUM"/>
+            <constant name="COUNT"/>
+        </enum>
+        <class name="MJdbcTools" qualified="com.manticore.jdbc.MJdbcTools" scope="public" abstract="false" error="false" exception="false" externalizable="false" serializable="false">
+            <class qualified="java.lang.Object"/>
+            <constructor name="MJdbcTools" signature="void ()" qualified="&lt;init&gt;" scope="public" final="false" native="false" synchronized="false" static="false" varArgs="false"/>
+            <method name="getSQLDate" signature="java.sql.Date (java.util.Calendar)" qualified="getSQLDate" scope="public" abstract="false" final="false" native="false" synchronized="false" static="true" varArgs="false">
+                <parameter name="cal">
+                    <type qualified="java.util.Calendar"/>
+                </parameter>
+                <return qualified="java.sql.Date"/>
+            </method>
+            <method name="getSQLDate" signature="java.sql.Date (java.util.Date)" qualified="getSQLDate" scope="public" abstract="false" final="false" native="false" synchronized="false" static="true" varArgs="false">
+                <parameter name="d">
+                    <type qualified="java.util.Date"/>
+                </parameter>
+                <return qualified="java.sql.Date"/>
+            </method>
+            <method name="getSQLTimestamp" signature="java.sql.Timestamp (java.util.Calendar)" qualified="getSQLTimestamp" scope="public" abstract="false" final="false" native="false" synchronized="false" static="true" varArgs="false">
+                <parameter name="cal">
+                    <type qualified="java.util.Calendar"/>
+                </parameter>
+                <return qualified="java.sql.Timestamp"/>
+            </method>
+            <method name="getSQLTimestamp" signature="java.sql.Timestamp (java.util.Date)" qualified="getSQLTimestamp" scope="public" abstract="false" final="false" native="false" synchronized="false" static="true" varArgs="false">
+                <parameter name="d">
+                    <type qualified="java.util.Date"/>
+                </parameter>
+                <return qualified="java.sql.Timestamp"/>
+            </method>
+            <method name="getSQLDateStr" signature="java.lang.String (java.util.Date)" qualified="getSQLDateStr" scope="public" abstract="false" final="false" native="false" synchronized="false" static="true" varArgs="false">
+                <parameter name="d">
+                    <type qualified="java.util.Date"/>
+                </parameter>
+                <return qualified="java.lang.String"/>
+            </method>
+            <method name="getSQLDateStr" signature="java.lang.String (java.util.Calendar)" qualified="getSQLDateStr" scope="public" abstract="false" final="false" native="false" synchronized="false" static="true" varArgs="false">
+                <parameter name="c">
+                    <type qualified="java.util.Calendar"/>
+                </parameter>
+                <return qualified="java.lang.String"/>
+            </method>
+            <method name="getSQLDateTimeStr" signature="java.lang.String (java.util.Date)" qualified="getSQLDateTimeStr" scope="public" abstract="false" final="false" native="false" synchronized="false" static="true" varArgs="false">
+                <parameter name="d">
+                    <type qualified="java.util.Date"/>
+                </parameter>
+                <return qualified="java.lang.String"/>
+            </method>
+            <method name="getSQLDateTimeStr" signature="java.lang.String (java.sql.Timestamp)" qualified="getSQLDateTimeStr" scope="public" abstract="false" final="false" native="false" synchronized="false" static="true" varArgs="false">
+                <parameter name="ts">
+                    <type qualified="java.sql.Timestamp"/>
+                </parameter>
+                <return qualified="java.lang.String"/>
+            </method>
+            <method name="getSQLDateTimeStr" signature="java.lang.String (java.util.Calendar)" qualified="getSQLDateTimeStr" scope="public" abstract="false" final="false" native="false" synchronized="false" static="true" varArgs="false">
+                <parameter name="c">
+                    <type qualified="java.util.Calendar"/>
+                </parameter>
+                <return qualified="java.lang.String"/>
+            </method>
+            <method name="getSQLHash" signature="java.lang.String (java.lang.String)" qualified="getSQLHash" scope="public" abstract="false" final="false" native="false" synchronized="false" static="true" varArgs="false">
+                <parameter name="sqlStr">
+                    <type qualified="java.lang.String"/>
+                </parameter>
+                <return qualified="java.lang.String"/>
+                <exception qualified="net.sf.jsqlparser.JSQLParserException"/>
+                <exception qualified="java.security.NoSuchAlgorithmException"/>
+            </method>
+            <method name="getParameterStr" signature="java.lang.String (java.lang.Object)" qualified="getParameterStr" scope="private" abstract="false" final="false" native="false" synchronized="false" static="true" varArgs="false">
+                <parameter name="o">
+                    <type qualified="java.lang.Object"/>
+                </parameter>
+                <return qualified="java.lang.String"/>
+            </method>
+            <method name="rewriteStatementWithNamedParameters" signature="java.lang.String (java.lang.String,java.util.Map&lt;java.lang.String,java.lang.Object&gt;)" qualified="rewriteStatementWithNamedParameters" scope="public" abstract="false" final="false" native="false" synchronized="false" static="true" varArgs="false">
+                <parameter name="sqlStr">
+                    <type qualified="java.lang.String"/>
+                </parameter>
+                <parameter name="parameters">
+                    <type qualified="java.util.Map&lt;java.lang.String,java.lang.Object&gt;">
+                        <generic qualified="java.lang.String"/>
+                        <generic qualified="java.lang.Object"/>
+                    </type>
+                </parameter>
+                <return qualified="java.lang.String"/>
+                <exception qualified="java.lang.Exception"/>
+            </method>
+            <method name="rewriteStatementWithNamedParameters" signature="java.lang.String (java.lang.String,java.lang.Object[])" qualified="rewriteStatementWithNamedParameters" scope="public" abstract="false" final="false" native="false" synchronized="false" static="true" varArgs="true">
+                <parameter name="sqlStr">
+                    <type qualified="java.lang.String"/>
+                </parameter>
+                <parameter name="parameters">
+                    <type qualified="java.lang.Object[]" dimension="1"/>
+                </parameter>
+                <return qualified="java.lang.String"/>
+                <exception qualified="java.lang.Exception"/>
+            </method>
+            <method name="emptyMapFromKeys" signature="java.util.TreeMap&lt;java.lang.Object,java.lang.Object&gt; (java.util.TreeSet&lt;java.lang.Object&gt;)" qualified="emptyMapFromKeys" scope="private" abstract="false" final="false" native="false" synchronized="false" static="true" varArgs="false">
+                <parameter name="keys">
+                    <type qualified="java.util.TreeSet&lt;java.lang.Object&gt;">
+                        <generic qualified="java.lang.Object"/>
+                    </type>
+                </parameter>
+                <return qualified="java.util.TreeMap&lt;java.lang.Object,java.lang.Object&gt;">
+                    <generic qualified="java.lang.Object"/>
+                    <generic qualified="java.lang.Object"/>
+                </return>
+            </method>
+            <method name="getPivotFromQuery" signature="java.lang.Object[][] (java.sql.ResultSet,com.manticore.jdbc.MJdbcTools.AggregateFunction,java.lang.String,java.lang.String,java.text.Format,boolean,boolean)" qualified="getPivotFromQuery" scope="public" abstract="false" final="false" native="false" synchronized="false" static="true" varArgs="false">
+                <comment>The getPivotFromQuery function takes a ResultSet and converts it into a pivot table. The
+ function is designed to create columns for each key of the Category Column and to aggregate
+ the values of the Aggregate Column for each Category.</comment>
+                <tag name="param" text="@param rs The ResultSet holding the source data with the category values in rows"/>
+                <tag name="param" text="@param function Determine what type of aggregate function to use (SUM, COUNT, ...)"/>
+                <tag name="param" text="@param aggregateColumnName Specify the column name of the aggregate value"/>
+                <tag name="param" text="@param categoryColumnName Identify the column that will be transformed into separate Value&#10;        Columns"/>
+                <tag name="param" text="@param categoryFormat Format the key values into column labels"/>
+                <tag name="param" text="@param buildTotals If to insert Total rows below and column on the right side"/>
+                <tag name="param" text="@param repeatHeader If to insert the header repeatedly before each category"/>
+                <tag name="return" text="@return A 2-dimensional array holding the transformed Column Names and the Data"/>
+                <parameter name="rs">
+                    <type qualified="java.sql.ResultSet"/>
+                </parameter>
+                <parameter name="function">
+                    <type qualified="com.manticore.jdbc.MJdbcTools.AggregateFunction"/>
+                </parameter>
+                <parameter name="aggregateColumnName">
+                    <type qualified="java.lang.String"/>
+                </parameter>
+                <parameter name="categoryColumnName">
+                    <type qualified="java.lang.String"/>
+                </parameter>
+                <parameter name="categoryFormat">
+                    <type qualified="java.text.Format"/>
+                </parameter>
+                <parameter name="buildTotals">
+                    <type qualified="boolean"/>
+                </parameter>
+                <parameter name="repeatHeader">
+                    <type qualified="boolean"/>
+                </parameter>
+                <return qualified="java.lang.Object[][]" dimension="2"/>
+                <exception qualified="java.sql.SQLException"/>
+                <annotation name="SuppressWarnings" qualified="java.lang.SuppressWarnings">
+                    <argument name="value" primitive="false" array="true">
+                        <type qualified="java.lang.String[]" dimension="1"/>
+                        <value>PMD.ExcessiveMethodLength</value>
+                    </argument>
+                </annotation>
+            </method>
+            <field name="SQL_DATE_FORMAT" qualified="SQL_DATE_FORMAT" scope="public" volatile="false" transient="false" static="true" final="true">
+                <type qualified="java.time.format.DateTimeFormatter"/>
+                <constant></constant>
+            </field>
+            <field name="SQL_TIMESTAMP_FORMAT" qualified="SQL_TIMESTAMP_FORMAT" scope="public" volatile="false" transient="false" static="true" final="true">
+                <type qualified="java.time.format.DateTimeFormatter"/>
+                <constant></constant>
+            </field>
+        </class>
+        <class name="MNamedParameter" qualified="com.manticore.jdbc.MNamedParameter" scope="public" abstract="false" error="false" exception="false" externalizable="false" serializable="false">
+            <class qualified="java.lang.Object"/>
+            <interface qualified="java.lang.Comparable&lt;com.manticore.jdbc.MNamedParameter&gt;">
+                <generic qualified="com.manticore.jdbc.MNamedParameter"/>
+            </interface>
+            <constructor name="MNamedParameter" signature="void (java.lang.String,int)" qualified="&lt;init&gt;" scope="public" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <parameter name="id">
+                    <type qualified="java.lang.String"/>
+                </parameter>
+                <parameter name="position">
+                    <type qualified="int"/>
+                </parameter>
+            </constructor>
+            <method name="getParameterValueArray" signature="java.util.LinkedList&lt;java.lang.Object&gt; (java.util.Collection&lt;com.manticore.jdbc.MNamedParameter&gt;)" qualified="getParameterValueArray" scope="public" abstract="false" final="false" native="false" synchronized="false" static="true" varArgs="false">
+                <parameter name="parameters">
+                    <type qualified="java.util.Collection&lt;com.manticore.jdbc.MNamedParameter&gt;">
+                        <generic qualified="com.manticore.jdbc.MNamedParameter"/>
+                    </type>
+                </parameter>
+                <return qualified="java.util.LinkedList&lt;java.lang.Object&gt;">
+                    <generic qualified="java.lang.Object"/>
+                </return>
+            </method>
+            <method name="add" signature="void (java.lang.Integer)" qualified="add" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <parameter name="position">
+                    <type qualified="java.lang.Integer"/>
+                </parameter>
+                <return qualified="void"/>
+            </method>
+            <method name="compareTo" signature="int (com.manticore.jdbc.MNamedParameter)" qualified="compareTo" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <parameter name="o">
+                    <type qualified="com.manticore.jdbc.MNamedParameter"/>
+                </parameter>
+                <return qualified="int"/>
+                <annotation name="Override" qualified="java.lang.Override"/>
+            </method>
+            <method name="hashCode" signature="int ()" qualified="hashCode" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <return qualified="int"/>
+                <annotation name="Override" qualified="java.lang.Override"/>
+            </method>
+            <method name="equals" signature="boolean (java.lang.Object)" qualified="equals" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <parameter name="obj">
+                    <type qualified="java.lang.Object"/>
+                </parameter>
+                <return qualified="boolean"/>
+                <annotation name="Override" qualified="java.lang.Override"/>
+            </method>
+            <method name="toString" signature="java.lang.String ()" qualified="toString" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <return qualified="java.lang.String"/>
+                <annotation name="Override" qualified="java.lang.Override"/>
+            </method>
+            <method name="setType" signature="void (int,java.lang.String,java.lang.String,int,int,int)" qualified="setType" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <parameter name="type">
+                    <type qualified="int"/>
+                </parameter>
+                <parameter name="typeName">
+                    <type qualified="java.lang.String"/>
+                </parameter>
+                <parameter name="className">
+                    <type qualified="java.lang.String"/>
+                </parameter>
+                <parameter name="precision">
+                    <type qualified="int"/>
+                </parameter>
+                <parameter name="scale">
+                    <type qualified="int"/>
+                </parameter>
+                <parameter name="nullable">
+                    <type qualified="int"/>
+                </parameter>
+                <return qualified="void"/>
+            </method>
+            <method name="getScale" signature="java.lang.Integer ()" qualified="getScale" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <return qualified="java.lang.Integer"/>
+            </method>
+            <method name="getId" signature="java.lang.String ()" qualified="getId" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <return qualified="java.lang.String"/>
+            </method>
+            <method name="setLabel" signature="com.manticore.jdbc.MNamedParameter (java.lang.String)" qualified="setLabel" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <parameter name="label">
+                    <type qualified="java.lang.String"/>
+                </parameter>
+                <return qualified="com.manticore.jdbc.MNamedParameter"/>
+            </method>
+            <method name="setValue" signature="com.manticore.jdbc.MNamedParameter (java.lang.Object)" qualified="setValue" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <parameter name="value">
+                    <type qualified="java.lang.Object"/>
+                </parameter>
+                <return qualified="com.manticore.jdbc.MNamedParameter"/>
+            </method>
+            <method name="getLabel" signature="java.lang.String ()" qualified="getLabel" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <return qualified="java.lang.String"/>
+            </method>
+            <method name="getValue" signature="java.lang.Object ()" qualified="getValue" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <return qualified="java.lang.Object"/>
+            </method>
+            <method name="getPositions" signature="java.util.TreeSet&lt;java.lang.Integer&gt; ()" qualified="getPositions" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <return qualified="java.util.TreeSet&lt;java.lang.Integer&gt;">
+                    <generic qualified="java.lang.Integer"/>
+                </return>
+            </method>
+            <method name="getType" signature="java.lang.Integer ()" qualified="getType" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <return qualified="java.lang.Integer"/>
+            </method>
+            <method name="getTypeName" signature="java.lang.String ()" qualified="getTypeName" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <return qualified="java.lang.String"/>
+            </method>
+            <method name="getPrecision" signature="java.lang.Integer ()" qualified="getPrecision" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <return qualified="java.lang.Integer"/>
+            </method>
+            <method name="getNullable" signature="java.lang.Integer ()" qualified="getNullable" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <return qualified="java.lang.Integer"/>
+            </method>
+            <method name="getClassName" signature="java.lang.String ()" qualified="getClassName" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <return qualified="java.lang.String"/>
+            </method>
+            <field name="id" qualified="id" scope="private" volatile="false" transient="false" static="false" final="true">
+                <type qualified="java.lang.String"/>
+                <constant></constant>
+            </field>
+            <field name="label" qualified="label" scope="private" volatile="false" transient="false" static="false" final="false">
+                <type qualified="java.lang.String"/>
+                <constant></constant>
+            </field>
+            <field name="value" qualified="value" scope="private" volatile="false" transient="false" static="false" final="false">
+                <type qualified="java.lang.Object"/>
+                <constant></constant>
+            </field>
+            <field name="positions" qualified="positions" scope="private" volatile="false" transient="false" static="false" final="true">
+                <type qualified="java.util.TreeSet&lt;java.lang.Integer&gt;">
+                    <generic qualified="java.lang.Integer"/>
+                </type>
+                <constant></constant>
+            </field>
+            <field name="type" qualified="type" scope="private" volatile="false" transient="false" static="false" final="false">
+                <type qualified="java.lang.Integer"/>
+                <constant></constant>
+            </field>
+            <field name="typeName" qualified="typeName" scope="private" volatile="false" transient="false" static="false" final="false">
+                <type qualified="java.lang.String"/>
+                <constant></constant>
+            </field>
+            <field name="precision" qualified="precision" scope="private" volatile="false" transient="false" static="false" final="false">
+                <type qualified="java.lang.Integer"/>
+                <constant></constant>
+            </field>
+            <field name="scale" qualified="scale" scope="private" volatile="false" transient="false" static="false" final="false">
+                <type qualified="java.lang.Integer"/>
+                <constant></constant>
+            </field>
+            <field name="nullable" qualified="nullable" scope="private" volatile="false" transient="false" static="false" final="false">
+                <type qualified="java.lang.Integer"/>
+                <constant></constant>
+            </field>
+            <field name="className" qualified="className" scope="private" volatile="false" transient="false" static="false" final="false">
+                <type qualified="java.lang.String"/>
+                <constant></constant>
+            </field>
+        </class>
+        <class name="MPreparedStatement" qualified="com.manticore.jdbc.MPreparedStatement" scope="public" abstract="false" error="false" exception="false" externalizable="false" serializable="false">
+            <class qualified="java.lang.Object"/>
+            <interface qualified="java.io.Closeable"/>
+            <constructor name="MPreparedStatement" signature="void (java.sql.Connection,java.lang.String,int)" qualified="&lt;init&gt;" scope="public" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <parameter name="conn">
+                    <type qualified="java.sql.Connection"/>
+                </parameter>
+                <parameter name="sqlStr">
+                    <type qualified="java.lang.String"/>
+                </parameter>
+                <parameter name="batchSize">
+                    <type qualified="int"/>
+                </parameter>
+                <exception qualified="java.sql.SQLException"/>
+                <exception qualified="net.sf.jsqlparser.JSQLParserException"/>
+            </constructor>
+            <constructor name="MPreparedStatement" signature="void (java.sql.Connection,java.lang.String)" qualified="&lt;init&gt;" scope="public" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <parameter name="conn">
+                    <type qualified="java.sql.Connection"/>
+                </parameter>
+                <parameter name="sqlStr">
+                    <type qualified="java.lang.String"/>
+                </parameter>
+                <exception qualified="java.sql.SQLException"/>
+                <exception qualified="net.sf.jsqlparser.JSQLParserException"/>
+            </constructor>
+            <method name="rewriteSqlStr" signature="java.lang.String (java.lang.String)" qualified="rewriteSqlStr" scope="private" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <parameter name="sqlStr">
+                    <type qualified="java.lang.String"/>
+                </parameter>
+                <return qualified="java.lang.String"/>
+                <exception qualified="net.sf.jsqlparser.JSQLParserException"/>
+            </method>
+            <method name="getParamArr" signature="java.util.LinkedList&lt;java.lang.Object&gt; (java.util.Map&lt;java.lang.String,java.lang.Object&gt;)" qualified="getParamArr" scope="private" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <parameter name="parameterValues">
+                    <type qualified="java.util.Map&lt;java.lang.String,java.lang.Object&gt;">
+                        <generic qualified="java.lang.String"/>
+                        <generic qualified="java.lang.Object"/>
+                    </type>
+                </parameter>
+                <return qualified="java.util.LinkedList&lt;java.lang.Object&gt;">
+                    <generic qualified="java.lang.Object"/>
+                </return>
+            </method>
+            <method name="setParameters" signature="void (java.util.Map&lt;java.lang.String,java.lang.Object&gt;)" qualified="setParameters" scope="private" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <parameter name="parameterValues">
+                    <type qualified="java.util.Map&lt;java.lang.String,java.lang.Object&gt;">
+                        <generic qualified="java.lang.String"/>
+                        <generic qualified="java.lang.Object"/>
+                    </type>
+                </parameter>
+                <return qualified="void"/>
+                <exception qualified="java.sql.SQLException"/>
+            </method>
+            <method name="setParameters" signature="void (java.lang.Object[])" qualified="setParameters" scope="private" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="true">
+                <parameter name="parameterValues">
+                    <type qualified="java.lang.Object[]" dimension="1"/>
+                </parameter>
+                <return qualified="void"/>
+                <exception qualified="java.sql.SQLException"/>
+            </method>
+            <method name="execute" signature="boolean (java.util.Map&lt;java.lang.String,java.lang.Object&gt;)" qualified="execute" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <parameter name="parameterValues">
+                    <type qualified="java.util.Map&lt;java.lang.String,java.lang.Object&gt;">
+                        <generic qualified="java.lang.String"/>
+                        <generic qualified="java.lang.Object"/>
+                    </type>
+                </parameter>
+                <return qualified="boolean"/>
+                <exception qualified="java.sql.SQLException"/>
+            </method>
+            <method name="execute" signature="boolean (java.lang.Object[])" qualified="execute" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="true">
+                <parameter name="parameterValues">
+                    <type qualified="java.lang.Object[]" dimension="1"/>
+                </parameter>
+                <return qualified="boolean"/>
+                <exception qualified="java.sql.SQLException"/>
+            </method>
+            <method name="executeUpdate" signature="int (java.util.Map&lt;java.lang.String,java.lang.Object&gt;)" qualified="executeUpdate" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <parameter name="parameterValues">
+                    <type qualified="java.util.Map&lt;java.lang.String,java.lang.Object&gt;">
+                        <generic qualified="java.lang.String"/>
+                        <generic qualified="java.lang.Object"/>
+                    </type>
+                </parameter>
+                <return qualified="int"/>
+                <exception qualified="java.sql.SQLException"/>
+            </method>
+            <method name="executeUpdate" signature="int (java.lang.Object[])" qualified="executeUpdate" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="true">
+                <parameter name="parameterValues">
+                    <type qualified="java.lang.Object[]" dimension="1"/>
+                </parameter>
+                <return qualified="int"/>
+                <exception qualified="java.sql.SQLException"/>
+            </method>
+            <method name="executeQuery" signature="java.sql.ResultSet (java.util.Map&lt;java.lang.String,java.lang.Object&gt;)" qualified="executeQuery" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <parameter name="parameterValues">
+                    <type qualified="java.util.Map&lt;java.lang.String,java.lang.Object&gt;">
+                        <generic qualified="java.lang.String"/>
+                        <generic qualified="java.lang.Object"/>
+                    </type>
+                </parameter>
+                <return qualified="java.sql.ResultSet"/>
+                <exception qualified="java.sql.SQLException"/>
+            </method>
+            <method name="executeQuery" signature="java.sql.ResultSet (java.lang.Object[])" qualified="executeQuery" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="true">
+                <parameter name="parameterValues">
+                    <type qualified="java.lang.Object[]" dimension="1"/>
+                </parameter>
+                <return qualified="java.sql.ResultSet"/>
+                <exception qualified="java.sql.SQLException"/>
+            </method>
+            <method name="close" signature="void ()" qualified="close" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <return qualified="void"/>
+            </method>
+            <method name="cancel" signature="void ()" qualified="cancel" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <return qualified="void"/>
+                <exception qualified="java.sql.SQLException"/>
+            </method>
+            <method name="addBatch" signature="void (java.util.Map&lt;java.lang.String,java.lang.Object&gt;)" qualified="addBatch" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <parameter name="parameterValues">
+                    <type qualified="java.util.Map&lt;java.lang.String,java.lang.Object&gt;">
+                        <generic qualified="java.lang.String"/>
+                        <generic qualified="java.lang.Object"/>
+                    </type>
+                </parameter>
+                <return qualified="void"/>
+                <exception qualified="java.sql.SQLException"/>
+            </method>
+            <method name="addBatch" signature="void (java.lang.Object[])" qualified="addBatch" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="true">
+                <parameter name="parameterValues">
+                    <type qualified="java.lang.Object[]" dimension="1"/>
+                </parameter>
+                <return qualified="void"/>
+                <exception qualified="java.sql.SQLException"/>
+            </method>
+            <method name="executeBatch" signature="int[] ()" qualified="executeBatch" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <return qualified="int[]" dimension="1"/>
+                <exception qualified="java.sql.SQLException"/>
+            </method>
+            <method name="addAndExecuteBatch" signature="int[] (java.util.Map&lt;java.lang.String,java.lang.Object&gt;)" qualified="addAndExecuteBatch" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <parameter name="parameterValues">
+                    <type qualified="java.util.Map&lt;java.lang.String,java.lang.Object&gt;">
+                        <generic qualified="java.lang.String"/>
+                        <generic qualified="java.lang.Object"/>
+                    </type>
+                </parameter>
+                <return qualified="int[]" dimension="1"/>
+                <exception qualified="java.sql.SQLException"/>
+            </method>
+            <method name="clearBatch" signature="void ()" qualified="clearBatch" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <return qualified="void"/>
+                <exception qualified="java.sql.SQLException"/>
+            </method>
+            <method name="getResultSet" signature="java.sql.ResultSet ()" qualified="getResultSet" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <return qualified="java.sql.ResultSet"/>
+                <exception qualified="java.sql.SQLException"/>
+            </method>
+            <method name="getUpdateCount" signature="int ()" qualified="getUpdateCount" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <return qualified="int"/>
+                <exception qualified="java.sql.SQLException"/>
+            </method>
+            <method name="setParameterTypes" signature="void ()" qualified="setParameterTypes" scope="private" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <return qualified="void"/>
+                <exception qualified="java.sql.SQLException"/>
+            </method>
+            <method name="getNamedParametersByAppearance" signature="java.util.List&lt;com.manticore.jdbc.MNamedParameter&gt; ()" qualified="getNamedParametersByAppearance" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <return qualified="java.util.List&lt;com.manticore.jdbc.MNamedParameter&gt;">
+                    <generic qualified="com.manticore.jdbc.MNamedParameter"/>
+                </return>
+            </method>
+            <method name="getNamedParametersByName" signature="java.util.List&lt;com.manticore.jdbc.MNamedParameter&gt; ()" qualified="getNamedParametersByName" scope="public" abstract="false" final="false" native="false" synchronized="false" static="false" varArgs="false">
+                <return qualified="java.util.List&lt;com.manticore.jdbc.MNamedParameter&gt;">
+                    <generic qualified="com.manticore.jdbc.MNamedParameter"/>
+                </return>
+            </method>
+            <field name="DEFAULT_BATCH_SIZE" qualified="DEFAULT_BATCH_SIZE" scope="private" volatile="false" transient="false" static="true" final="true">
+                <type qualified="int"/>
+                <constant>24</constant>
+            </field>
+            <field name="statement" qualified="statement" scope="private" volatile="false" transient="false" static="false" final="true">
+                <type qualified="java.sql.PreparedStatement"/>
+                <constant></constant>
+            </field>
+            <field name="parameterMetaData" qualified="parameterMetaData" scope="private" volatile="false" transient="false" static="false" final="true">
+                <type qualified="java.sql.ParameterMetaData"/>
+                <constant></constant>
+            </field>
+            <field name="sqlStr" qualified="sqlStr" scope="private" volatile="false" transient="false" static="false" final="true">
+                <type qualified="java.lang.String"/>
+                <constant></constant>
+            </field>
+            <field name="parameters" qualified="parameters" scope="private" volatile="false" transient="false" static="false" final="true">
+                <type qualified="org.apache.commons.collections4.map.CaseInsensitiveMap&lt;java.lang.String,com.manticore.jdbc.MNamedParameter&gt;">
+                    <generic qualified="java.lang.String"/>
+                    <generic qualified="com.manticore.jdbc.MNamedParameter"/>
+                </type>
+                <constant></constant>
+            </field>
+            <field name="recordCount" qualified="recordCount" scope="private" volatile="false" transient="false" static="false" final="false">
+                <type qualified="long"/>
+                <constant></constant>
+            </field>
+            <field name="batchSize" qualified="batchSize" scope="private" volatile="false" transient="false" static="false" final="true">
+                <type qualified="int"/>
+                <constant></constant>
+            </field>
+        </class>
+    </package>
+</root>

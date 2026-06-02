@@ -191,14 +191,14 @@ public class MJdbcTools {
         ExpressionDeParser expressionDeParser = new ExpressionDeParser() {
             @Override
             public <S> StringBuilder visit(JdbcNamedParameter parameter, S context) {
-                buffer.append(getParameterStr(parameters.get(parameter.getName())));
-                return buffer;
+                builder.append(getParameterStr(parameters.get(parameter.getName())));
+                return builder;
             }
         };
 
         SelectDeParser selectDeParser = new SelectDeParser(expressionDeParser, builder);
         expressionDeParser.setSelectVisitor(selectDeParser);
-        expressionDeParser.setBuffer(builder);
+        expressionDeParser.setBuilder(builder);
 
         StatementDeParser statementDeParser =
                 new StatementDeParser(expressionDeParser, selectDeParser, builder);
@@ -216,22 +216,22 @@ public class MJdbcTools {
 
             @Override
             public <S> StringBuilder visit(JdbcParameter parameter, S context) {
-                buffer.append(getParameterStr(parameters[i]));
+                builder.append(getParameterStr(parameters[i]));
                 i++;
-                return buffer;
+                return builder;
             }
 
             @Override
             public <S> StringBuilder visit(JdbcNamedParameter parameter, S context) {
-                buffer.append(getParameterStr(parameters[i]));
+                builder.append(getParameterStr(parameters[i]));
                 i++;
-                return buffer;
+                return builder;
             }
         };
 
         SelectDeParser selectDeParser = new SelectDeParser(expressionDeParser, builder);
         expressionDeParser.setSelectVisitor(selectDeParser);
-        expressionDeParser.setBuffer(builder);
+        expressionDeParser.setBuilder(builder);
 
         StatementDeParser statementDeParser =
                 new StatementDeParser(expressionDeParser, selectDeParser, builder);
