@@ -57,7 +57,13 @@
 #       Darwin, MinGW, and NonStop.
 #
 #   (3) This script is generated from the Groovy template
+<<<<<<< HEAD
 #       https://github.com/gradle/gradle/blob/<unknown>/platforms/jvm/plugins-application/src/main/resources/org/gradle/api/internal/plugins/unixStartScript.txt
+||||||| 2c8ad14
+#       https://github.com/gradle/gradle/blob/HEAD/subprojects/plugins/src/main/resources/org/gradle/api/internal/plugins/unixStartScript.txt
+=======
+#       https://github.com/gradle/gradle/blob/HEAD/platforms/jvm/plugins-application/src/main/resources/org/gradle/api/internal/plugins/unixStartScript.txt
+>>>>>>> 0a4a3a0a1275d08797245be0a224af7fa537d315
 #       within the Gradle project.
 #
 #       You can find Gradle at https://github.com/gradle/gradle/.

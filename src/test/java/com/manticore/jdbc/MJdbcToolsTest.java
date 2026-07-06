@@ -1,5 +1,11 @@
 /**
+<<<<<<< HEAD
  * Copyright (C) 2026 manticore-projects Co. Ltd. <support@manticore-projects.com>
+||||||| 2c8ad14
+ * Copyright (C) 2024 manticore-projects Co. Ltd. <support@manticore-projects.com>
+=======
+ * Copyright (C) 2025 manticore-projects Co. Ltd. <support@manticore-projects.com>
+>>>>>>> 0a4a3a0a1275d08797245be0a224af7fa537d315
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * <p>
  * This program is free software; you can redistribute it and/or modify it under the terms of the

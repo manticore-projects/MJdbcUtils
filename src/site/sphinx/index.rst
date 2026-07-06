@@ -8,7 +8,8 @@ MJdbcUtils - JDBC Named Parameter Tools
 
    usage
    Changelog <changelog.rst>
-   Java API <javadoc.rst>
+   Stable API <javadoc_stable.rst>
+   Snapshot API <javadoc_snapshot.rst>
 
 
 .. image:: https://badgen.net/maven/v/maven-central/com.manticore-projects.jdbc/MJdbcUtils
