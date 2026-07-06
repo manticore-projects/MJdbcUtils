@@ -26,6 +26,8 @@ import net.sf.jsqlparser.util.deparser.ExpressionDeParser;
 import net.sf.jsqlparser.util.deparser.SelectDeParser;
 import net.sf.jsqlparser.util.deparser.StatementDeParser;
 
+import java.io.IOException;
+import java.io.Reader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
@@ -43,9 +45,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -182,6 +187,115 @@ public class MJdbcTools {
         } else {
             return "'" + o + "'";
         }
+    }
+
+    /** Result of a streaming parameter scan, see {@link #scanParameters(Reader)}. */
+    public static final class ParameterScan {
+        private final long statementCount;
+        private final Set<String> namedParameters;
+        private final long positionalParameterCount;
+
+        ParameterScan(long statementCount, Set<String> namedParameters,
+                long positionalParameterCount) {
+            this.statementCount = statementCount;
+            this.namedParameters = Collections.unmodifiableSet(namedParameters);
+            this.positionalParameterCount = positionalParameterCount;
+        }
+
+        public long getStatementCount() {
+            return statementCount;
+        }
+
+        /** Distinct named parameters in first-seen order. */
+        public Set<String> getNamedParameters() {
+            return namedParameters;
+        }
+
+        public long getPositionalParameterCount() {
+            return positionalParameterCount;
+        }
+    }
+
+    /**
+     * Returns the distinct named parameters of a single parseable statement, in first-seen order,
+     * based on a full JSqlParser parse (so {@code :names} inside literals or comments are never
+     * reported).
+     */
+    public static Set<String> getNamedParameters(String sqlStr) throws JSQLParserException {
+        final LinkedHashSet<String> names = new LinkedHashSet<>();
+        net.sf.jsqlparser.statement.Statement statement = CCJSqlParserUtil.parse(sqlStr);
+        StringBuilder builder = new StringBuilder();
+        ExpressionDeParser expressionDeParser = new ExpressionDeParser() {
+            @Override
+            public <S> StringBuilder visit(JdbcNamedParameter parameter, S context) {
+                names.add(parameter.getName());
+                return super.visit(parameter, context);
+            }
+        };
+
+        SelectDeParser selectDeParser = new SelectDeParser(expressionDeParser, builder);
+        expressionDeParser.setSelectVisitor(selectDeParser);
+        expressionDeParser.setBuilder(builder);
+
+        StatementDeParser statementDeParser =
+                new StatementDeParser(expressionDeParser, selectDeParser, builder);
+        statement.accept(statementDeParser);
+
+        return names;
+    }
+
+    /** See {@link #scanParameters(Reader, boolean)}, with PL/SQL slash termination enabled. */
+    public static ParameterScan scanParameters(Reader reader) throws IOException {
+        return scanParameters(reader, true);
+    }
+
+    /**
+     * Streams through an arbitrarily large SQL script in O(1) memory and returns the number of
+     * statements plus all distinct parameters. Intended as the first pass of a two-pass batch
+     * execution: scan (count and parameters), prompt, then re-open the source and execute.
+     * <p>
+     * Statements are split by {@link MSqlSplitter}. Parameter detection is two-tiered: the splitter
+     * collects lexical candidates ({@code :name} / {@code ?} outside literals and comments);
+     * statements without candidates are never parsed (dump files scan at I/O speed). Statements
+     * with candidates are confirmed by a full JSqlParser parse; where the grammar does not cover
+     * the statement (PL/SQL blocks, vendor DDL), the lexical candidates are used as fallback --
+     * except {@code :NEW}/{@code :OLD} correlation names inside PL/SQL blocks, which are trigger
+     * pseudo-records, not bind parameters.
+     *
+     * @param reader the script source; not closed by this method
+     * @param plsqlSlashTermination see {@link MSqlSplitter}
+     */
+    public static ParameterScan scanParameters(Reader reader, boolean plsqlSlashTermination)
+            throws IOException {
+        MSqlSplitter splitter = new MSqlSplitter(reader, plsqlSlashTermination);
+        long statementCount = 0;
+        long positionalCount = 0;
+        LinkedHashSet<String> names = new LinkedHashSet<>();
+
+        String sqlStr;
+        while ((sqlStr = splitter.nextStatement()) != null) {
+            statementCount++;
+            positionalCount += splitter.getPositionalParameterCount();
+
+            Set<String> candidates = splitter.getNamedParameters();
+            if (candidates.isEmpty()) {
+                continue;
+            }
+            try {
+                names.addAll(getNamedParameters(sqlStr));
+            } catch (JSQLParserException | RuntimeException ex) {
+                // grammar does not cover this statement: fall back to the lexical candidates
+                for (String candidate : candidates) {
+                    if (splitter.isPlSqlStatement()
+                            && ("NEW".equalsIgnoreCase(candidate)
+                                    || "OLD".equalsIgnoreCase(candidate))) {
+                        continue;
+                    }
+                    names.add(candidate);
+                }
+            }
+        }
+        return new ParameterScan(statementCount, names, positionalCount);
     }
 
     public static String rewriteStatementWithNamedParameters(String sqlStr,
