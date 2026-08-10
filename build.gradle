@@ -51,11 +51,11 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
 ||||||| 2c8ad14
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.+'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.+'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:6.+'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:6.+'
 =======
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:6.1.3'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:6.1.3'
 >>>>>>> 0a4a3a0a1275d08797245be0a224af7fa537d315
     testImplementation 'com.h2database:h2:2.+'
     xmlDoclet 'com.manticore-projects.tools:xml-doclet:+'
