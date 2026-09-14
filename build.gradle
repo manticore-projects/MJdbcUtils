@@ -8,6 +8,7 @@ buildscript {
 
 plugins {
     id 'java-library'
+    id "com.vanniktech.maven.publish" version "latest.release"
     id 'maven-publish'
     id 'signing'
 
@@ -89,7 +90,7 @@ description = 'Java Library for Named Parameters (e.g. :Customer_Id ) in Queries
 
 java {
     withSourcesJar()
-    withJavadocJar()
+    // withJavadocJar() -- the Javadoc JAR is built and attached by mavenPublishing below
     // source 11 / target 17 was inconsistent: the published bytecode is Java 17 and can not be
     // read by a Java 11 runtime anyway. Set `release` so the compiler also checks the API level.
     sourceCompatibility = JavaVersion.VERSION_17
@@ -242,79 +243,70 @@ tasks.withType(Checkstyle).configureEach {
 }
 
 
-tasks.named('publish') {
-    dependsOn(check)
+// `publish` is Gradle's own task; the Central Portal upload runs under `publishToMavenCentral`.
+// Both need the same prerequisites, or a CI job invoking the latter silently skips check.
+// Task names are given as Strings so this block does not depend on declaration order.
+tasks.matching { it.name in ['publish', 'publishToMavenCentral'] }.configureEach {
+    dependsOn('check')
 }
 
+mavenPublishing {
+    publishToMavenCentral(true)
+    signAllPublications()
+
+    coordinates(group, "MJdbcUtils", version)
+
+    pom {
+        name.set('MJdbcUtils')
+        description.set('Java Library for Named Parameters (e.g. :Customer_Id ) in Queries or DML/DDL statements.')
+        url.set('https://manticore-projects.com/MJdbcUtils/index.html')
+
+        licenses {
+            license {
+                name.set('The Apache Software License, Version 2.0')
+                url.set('http://www.apache.org/licenses/LICENSE-2.0.txt')
+            }
+            license {
+                name.set('GNU General Public License, version 2 or later')
+                url.set('https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt')
+            }
+        }
+
+        developers {
+            developer {
+                id.set('are')
+                name.set('Andreas Reichel')
+                email.set('andreas@manticore-projects.com')
+            }
+        }
+
+        scm {
+            connection.set('scm:git:https://github.com/manticore-projects/MJdbcUtils.git')
+            developerConnection.set('scm:git:ssh://git@github.com:manticore-projects/MJdbcUtils.git')
+            url.set('https://github.com/manticore-projects/MJdbcUtils.git')
+        }
+    }
+}
+
+// The one and only publication. Declared after the `java` block so that the sourcesJar and
+// javadocJar tasks already exist.
 publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-            versionMapping {
-                usage('java-api') {
-                    fromResolutionOf('runtimeClasspath')
-                }
-                usage('java-runtime') {
-                    fromResolutionResult()
-                }
+    publications.withType(MavenPublication).configureEach {
+        versionMapping {
+            usage('java-api') {
+                fromResolutionOf('runtimeClasspath')
             }
-            pom {
-                name = 'MJdbcUtils'
-                description = 'Java Library for Named Parameters (e.g. :Customer_Id ) in Queries or DML/DDL statements.'
-                url = 'https://manticore-projects.com/MJdbcUtils/index.html'
-                licenses {
-                    license {
-                        name = 'The Apache Software License, Version 2.0'
-                        url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
-                        distribution = 'repo'
-                        comments = 'Dual licensed: choose either Apache-2.0 or GPL-2.0-or-later.'
-                    }
-                    license {
-                        name = 'GNU General Public License, version 2 or later'
-                        url = 'https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt'
-                        distribution = 'repo'
-                        comments = 'Dual licensed: choose either Apache-2.0 or GPL-2.0-or-later.'
-                    }
-                }
-                developers {
-                    developer {
-                        id = 'are'
-                        name = 'Andreas Reichel'
-                        email = 'andreas@manticore-projects.com'
-                    }
-                }
-                scm {
-                    connection = 'scm:git@github.com:manticore-projects/MJdbcUtils.git'
-                    developerConnection = 'scm:git@github.com:manticore-projects/MJdbcUtils.git'
-                    url = 'https://github.com/manticore-projects/MJdbcUtils'
-                }
+            usage('java-runtime') {
+                fromResolutionResult()
             }
-        }
-    }
-    repositories {
-        maven {
-            name = "ossrh"
-
-            // OSSRH (oss.sonatype.org / s01.oss.sonatype.org) was sunset in June 2025.
-            // These are Sonatype's Central Portal endpoints; the staging API is the
-            // drop-in compatibility service for legacy `maven-publish` setups.
-            // Credentials: a Central Portal token as ossrhUsername/ossrhPassword.
-            // Releases additionally require publishing the staged deployment at
-            // https://central.sonatype.com/publishing/deployments (or via the API).
-            def releasesRepoUrl = "https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/"
-            def snapshotsRepoUrl = "https://central.sonatype.com/repository/maven-snapshots/"
-            url = uri(version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl)
-            credentials(PasswordCredentials)
         }
     }
 }
 
-signing {
-    sign publishing.publications.mavenJava
-}
-
-
-
+// Signing and its task wiring are handled by mavenPublishing.signAllPublications() above.
+// The hand-rolled `publishing { repositories { maven { name = "ossrh" ... } } }` block that used
+// to live here uploaded to the legacy staging API and never published the deployment, so releases
+// stayed staged forever. The Central Portal upload is now done by the plugin.
 
 tasks.register('gitChangelogTask', GitChangelogTask) {
     fromRepo.set(file("$projectDir").toString())
