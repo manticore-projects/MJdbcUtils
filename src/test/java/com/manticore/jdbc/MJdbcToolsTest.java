@@ -1,11 +1,6 @@
 /**
-<<<<<<< HEAD
  * Copyright (C) 2026 manticore-projects Co. Ltd. <support@manticore-projects.com>
-||||||| 2c8ad14
- * Copyright (C) 2024 manticore-projects Co. Ltd. <support@manticore-projects.com>
-=======
- * Copyright (C) 2025 manticore-projects Co. Ltd. <support@manticore-projects.com>
->>>>>>> 0a4a3a0a1275d08797245be0a224af7fa537d315
+ * SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * <p>
  * This program is free software; you can redistribute it and/or modify it under the terms of the
@@ -31,7 +26,9 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -41,10 +38,15 @@ import java.sql.Statement;
 import java.text.DateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
 class MJdbcToolsTest {
+    // an own, isolated in-memory database; sharing "test" with the other test classes
+    // leaks tables between them and makes the outcome depend on the execution order
+    private static final String JDBC_URL = "jdbc:h2:mem:MJdbcToolsTest;DB_CLOSE_DELAY=-1";
+
     @Test
     void rewriteStatementWithQuotedNamedParameters() throws Exception {
         HashMap<String, Object> parameters = new HashMap<>();
@@ -176,15 +178,14 @@ class MJdbcToolsTest {
 
         StringBuilder builder = new StringBuilder();
         try (
-                Connection conn =
-                        DriverManager.getConnection("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "");
-                Statement st = conn.createStatement();) {
+                Connection conn = DriverManager.getConnection(JDBC_URL, "sa", "");
+                Statement st = conn.createStatement()) {
             for (net.sf.jsqlparser.statement.Statement parsed : CCJSqlParserUtil
                     .parseStatements(ddlStr)) {
                 st.execute(parsed.toString());
             }
 
-            try (ResultSet rs = st.executeQuery("SELECT * FROM rep_comprehensive_income");) {
+            try (ResultSet rs = st.executeQuery("SELECT * FROM rep_comprehensive_income")) {
                 Object[][] data = MJdbcTools.getPivotFromQuery(
                         rs,
                         MJdbcTools.AggregateFunction.SUM,
@@ -219,22 +220,21 @@ class MJdbcToolsTest {
                         Objects.requireNonNull(
                                 MJdbcToolsTest.class.getResourceAsStream("/assets_over_time.sql")),
                         Charset.defaultCharset());
-                BufferedReader bufferedReader = new BufferedReader(reader);) {
+                BufferedReader bufferedReader = new BufferedReader(reader)) {
             String line;
             while ((line = bufferedReader.readLine()) != null) {
                 builder.append(line).append("\n");
             }
         }
 
-        try (Connection conn =
-                DriverManager.getConnection("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "");
-                Statement st = conn.createStatement();) {
+        try (Connection conn = DriverManager.getConnection(JDBC_URL, "sa", "");
+                Statement st = conn.createStatement()) {
             for (net.sf.jsqlparser.statement.Statement parsed : CCJSqlParserUtil
                     .parseStatements(builder.toString())) {
                 st.execute(parsed.toString());
             }
 
-            try (ResultSet rs = st.executeQuery("SELECT * FROM cfe.assets_over_time");) {
+            try (ResultSet rs = st.executeQuery("SELECT * FROM cfe.assets_over_time")) {
                 Object[][] data = MJdbcTools.getPivotFromQuery(
                         rs,
                         MJdbcTools.AggregateFunction.SUM,
@@ -257,5 +257,33 @@ class MJdbcToolsTest {
                 }
             }
         }
+    }
+
+    @Test
+    void getSQLHash() throws Exception {
+        String hash = MJdbcTools.getSQLHash("select a, b from t where x = 1");
+
+        // a SHA-256 digest, hex encoded and stable across platforms and default charsets
+        Assertions.assertEquals(64, hash.length());
+        Assertions.assertTrue(hash.matches("[0-9a-f]{64}"), hash);
+
+        // the same statement, differently written, must normalise to the same hash
+        Assertions.assertEquals(hash, MJdbcTools.getSQLHash("SELECT a, b FROM t WHERE x = 1"));
+        Assertions.assertNotEquals(hash, MJdbcTools.getSQLHash("select a, b from t where x = 2"));
+    }
+
+    @Test
+    void scanParameters() throws IOException {
+        String script = "SELECT :a, :b FROM dual WHERE c = ':notAParameter';\n"
+                + "-- :alsoNotAParameter\n"
+                + "UPDATE t SET x = :b WHERE y = ? AND z = ?;\n"
+                + "SELECT 1;\n";
+
+        MJdbcTools.ParameterScan scan =
+                MJdbcTools.scanParameters(new StringReader(script));
+
+        Assertions.assertEquals(3, scan.getStatementCount());
+        Assertions.assertEquals(2, scan.getPositionalParameterCount());
+        Assertions.assertEquals(List.of("a", "b"), List.copyOf(scan.getNamedParameters()));
     }
 }

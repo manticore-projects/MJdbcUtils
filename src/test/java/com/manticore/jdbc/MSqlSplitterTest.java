@@ -1,5 +1,6 @@
 /**
  * Copyright (C) 2026 manticore-projects Co. Ltd. <support@manticore-projects.com>
+ * SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * <p>
  * This program is free software; you can redistribute it and/or modify it under the terms of the

@@ -1,5 +1,4 @@
 import se.bjurr.gitchangelog.plugin.gradle.GitChangelogTask
-import com.nwalsh.gradle.saxon.SaxonXsltTask
 
 buildscript {
     dependencies {
@@ -28,7 +27,7 @@ repositories {
     mavenLocal()
     mavenCentral()
     maven {
-        url 'https://oss.sonatype.org/content/repositories/snapshots'
+        url = uri('https://central.sonatype.com/repository/maven-snapshots/')
     }
 }
 
@@ -37,26 +36,13 @@ configurations {
 }
 
 dependencies {
-<<<<<<< HEAD
     api 'com.manticore-projects.jsqlformatter:jsqlparser:+'
-||||||| 2c8ad14
-    api 'com.github.jsqlparser:jsqlparser:+'
-=======
-    api 'com.github.jsqlparser:jsqlparser:5.3+'
->>>>>>> 0a4a3a0a1275d08797245be0a224af7fa537d315
     api 'org.apache.commons:commons-collections4:4.+'
-<<<<<<< HEAD
+
     testImplementation platform('org.junit:junit-bom:5.+')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-||||||| 2c8ad14
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.+'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.+'
-=======
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
->>>>>>> 0a4a3a0a1275d08797245be0a224af7fa537d315
     testImplementation 'com.h2database:h2:2.+'
     xmlDoclet 'com.manticore-projects.tools:xml-doclet:+'
 }
@@ -70,7 +56,7 @@ def getVersion = { boolean considerSnapshot ->
     String snapshot = ""
 
     def versionStr = providers.exec {
-        commandLine "git", "--no-pager", "-C", project.projectDir,  "describe", "--tags", "--always", "--dirty=-SNAPSHOT"
+        commandLine "git", "--no-pager", "-C", project.projectDir, "describe", "--tags", "--always", "--dirty=-SNAPSHOT"
     }.standardOutput.asText.get().trim()
 
     def pattern = /(?<major>\d*)\.(?<minor>\d*)(\.(?<patch>\d*))?(-(?<build>\d*)-(?<commit>[a-zA-Z\d]*))?/
@@ -98,49 +84,37 @@ def getVersion = { boolean considerSnapshot ->
 // for publishing a release, call Gradle with Environment Variable RELEASE:
 // RELEASE=true gradle :publish
 version = getVersion( !System.getenv("RELEASE") )
-group 'com.manticore-projects.jdbc'
+group = 'com.manticore-projects.jdbc'
 description = 'Java Library for Named Parameters (e.g. :Customer_Id ) in Queries or DML/DDL statements.'
 
 java {
     withSourcesJar()
     withJavadocJar()
-    sourceCompatibility(JavaVersion.VERSION_11)
-<<<<<<< HEAD
-    targetCompatibility(JavaVersion.VERSION_17)
+    // source 11 / target 17 was inconsistent: the published bytecode is Java 17 and can not be
+    // read by a Java 11 runtime anyway. Set `release` so the compiler also checks the API level.
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
     // needed for XML-Doclet to work (since Doclet changed again with Java 13)
-||||||| 2c8ad14
-    targetCompatibility(JavaVersion.VERSION_11)
-    // needed for XML-Doclet to work (since Doclet changed again with Java 13)
-=======
-    targetCompatibility(JavaVersion.VERSION_11)
->>>>>>> 0a4a3a0a1275d08797245be0a224af7fa537d315
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(17))
     }
 }
 
+tasks.withType(JavaCompile).configureEach {
+    options.release = 17
+    options.compilerArgs << '-Xlint:unchecked' << '-Xlint:deprecation'
+}
+
 javadoc {
-    if(JavaVersion.current().isJava9Compatible()) {
+    if (JavaVersion.current().isJava9Compatible()) {
         options.addBooleanOption('html5', true)
     }
     options.addBooleanOption("Xdoclint:none", true)
 }
 
 tasks.register('xmldoc', Javadoc) {
-<<<<<<< HEAD
     dependsOn(compileJava)
-||||||| 2c8ad14
-    dependsOn(jar)
-    source = sourceSets.main.allJava
-=======
-    def outFile =  reporting.file(
-            version.endsWith("-SNAPSHOT")
-                    ? "xmlDoclet/javadoc_snapshot.xml"
-                    : "xmlDoclet/javadoc_stable.xml"
-    )
->>>>>>> 0a4a3a0a1275d08797245be0a224af7fa537d315
 
-<<<<<<< HEAD
     def outFile = layout.buildDirectory.file("reports/xmlDoclet/javadoc.xml").get().asFile
     source = sourceSets.main.allJava
     classpath = sourceSets.main.runtimeClasspath
@@ -148,47 +122,13 @@ tasks.register('xmldoc', Javadoc) {
     destinationDir = layout.buildDirectory.dir("reports/xmlDoclet").get().asFile
     options.docletpath = configurations.xmlDoclet.files as List
     options.doclet = "com.manticore.tools.xmldoclet.XmlDoclet"
-||||||| 2c8ad14
-    // beware: Gradle deletes this folder automatically and there is no switch-off
-    destinationDir = reporting.file("xmlDoclet")
-    options.docletpath = configurations.xmlDoclet.files.asType(List)
-    options.doclet = "com.github.markusbernhardt.xmldoclet.XmlDoclet"
-    title = "API $version"
-    options.addBooleanOption("rst", true)
-    options.addBooleanOption("withFloatingToc", true)
-=======
-    def rstFile =  reporting.file(
-            version.endsWith("-SNAPSHOT")
-                    ? "xmlDoclet/javadoc_snapshot.rst"
-                    : "xmlDoclet/javadoc_stable.rst"
-    )
-
-    source = sourceSets.main.allJava
-    classpath = sourceSets.main.runtimeClasspath
-
-    title = "API $version"
-    destinationDir = reporting.file("xmlDoclet")
-    options.docletpath = configurations.xmlDoclet.files as List
-    options.doclet = "com.manticore.tools.xmldoclet.XmlDoclet"
-    options.addBooleanOption("rst", true)
-    options.addBooleanOption("withFloatingToc", true)
->>>>>>> 0a4a3a0a1275d08797245be0a224af7fa537d315
     options.addStringOption("basePackage", "com.manticore.jdbc")
     options.addStringOption("filename", outFile.getName())
 
-    dependsOn(compileJava)
     doLast {
         copy {
-<<<<<<< HEAD
             from outFile
             into rootProject.layout.projectDirectory.dir("src/site/sphinx/_static").asFile
-||||||| 2c8ad14
-            from reporting.file("xmlDoclet/javadoc.rst")
-            into "${projectDir}/src/site/sphinx"
-=======
-            from rstFile
-            into layout.projectDirectory.dir("src/site/sphinx/").asFile
->>>>>>> 0a4a3a0a1275d08797245be0a224af7fa537d315
         }
     }
 }
@@ -203,6 +143,12 @@ test {
 
 license {
     header = project.file('LICENSE')
+
+    // the sources carry the header as a JavaDoc comment ("/**"), not as "/*"; without this
+    // mapping every single file is reported as "Missing header"
+    mapping {
+        java = 'JAVADOC_STYLE'
+    }
     ext.year = Calendar.getInstance().get(Calendar.YEAR)
     ext.name = 'manticore-projects Co. Ltd.'
     ext.email = 'support@manticore-projects.com'
@@ -234,7 +180,7 @@ jacocoTestCoverageVerification {
                 counter = 'LINE'
                 value = 'MISSEDCOUNT'
                 maximum = 20
-                }
+            }
             excludes = [
             ]
         }
@@ -249,14 +195,14 @@ coveralls {
 pmd {
     consoleOutput = true
     sourceSets = [sourceSets.main, sourceSets.test]
-    
+
     // clear the ruleset in order to use configured rules only
     ruleSets = []
-    
+
     //rulesMinimumPriority = 1
-    
+
     ruleSetFiles = files("config/pmd/ruleset.xml")
-    
+
     pmdMain {
         excludes = [
                 "build/generated/*"
@@ -266,7 +212,7 @@ pmd {
 
 checkstyle {
     sourceSets = [sourceSets.main, sourceSets.test]
-    configFile =rootProject.file('config/checkstyle/checkstyle.xml')
+    configFile = rootProject.file('config/checkstyle/checkstyle.xml')
 }
 
 spotless {
@@ -296,7 +242,7 @@ tasks.withType(Checkstyle).configureEach {
 }
 
 
-publish {
+tasks.named('publish') {
     dependsOn(check)
 }
 
@@ -319,7 +265,15 @@ publishing {
                 licenses {
                     license {
                         name = 'The Apache Software License, Version 2.0'
-                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+                        distribution = 'repo'
+                        comments = 'Dual licensed: choose either Apache-2.0 or GPL-2.0-or-later.'
+                    }
+                    license {
+                        name = 'GNU General Public License, version 2 or later'
+                        url = 'https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt'
+                        distribution = 'repo'
+                        comments = 'Dual licensed: choose either Apache-2.0 or GPL-2.0-or-later.'
                     }
                 }
                 developers {
@@ -339,11 +293,17 @@ publishing {
     }
     repositories {
         maven {
-            name "ossrh"
+            name = "ossrh"
 
-            def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
-            def snapshotsRepoUrl= "https://s01.oss.sonatype.org/content/repositories/snapshots/"
-            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            // OSSRH (oss.sonatype.org / s01.oss.sonatype.org) was sunset in June 2025.
+            // These are Sonatype's Central Portal endpoints; the staging API is the
+            // drop-in compatibility service for legacy `maven-publish` setups.
+            // Credentials: a Central Portal token as ossrhUsername/ossrhPassword.
+            // Releases additionally require publishing the staged deployment at
+            // https://central.sonatype.com/publishing/deployments (or via the API).
+            def releasesRepoUrl = "https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/"
+            def snapshotsRepoUrl = "https://central.sonatype.com/repository/maven-snapshots/"
+            url = uri(version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl)
             credentials(PasswordCredentials)
         }
     }

@@ -1,11 +1,6 @@
 /**
-<<<<<<< HEAD
  * Copyright (C) 2026 manticore-projects Co. Ltd. <support@manticore-projects.com>
-||||||| 2c8ad14
- * Copyright (C) 2024 manticore-projects Co. Ltd. <support@manticore-projects.com>
-=======
- * Copyright (C) 2025 manticore-projects Co. Ltd. <support@manticore-projects.com>
->>>>>>> 0a4a3a0a1275d08797245be0a224af7fa537d315
+ * SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * <p>
  * This program is free software; you can redistribute it and/or modify it under the terms of the
@@ -35,12 +30,10 @@ import net.sf.jsqlparser.util.deparser.StatementDeParser;
 import java.io.IOException;
 import java.io.Reader;
 import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.text.Format;
 import java.time.Instant;
@@ -48,8 +41,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
@@ -57,14 +48,18 @@ import java.util.GregorianCalendar;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
 
-public class MJdbcTools {
+public final class MJdbcTools {
     public static final DateTimeFormatter SQL_DATE_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd");
     public static final DateTimeFormatter SQL_TIMESTAMP_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+
+    private static final char[] HEX = "0123456789abcdef".toCharArray();
+
+    private MJdbcTools() {
+        // utility class, not meant to be instantiated
+    }
 
     public static java.sql.Date getSQLDate(Calendar cal) {
         return new java.sql.Date(cal.getTimeInMillis());
@@ -83,11 +78,7 @@ public class MJdbcTools {
     }
 
     public static String getSQLDateStr(Date d) {
-        LocalDate localDate = Instant
-                .ofEpochMilli(d.getTime())
-                .atZone(ZoneId.systemDefault())
-                .toLocalDate();
-        return "{d '" + SQL_DATE_FORMAT.format(localDate) + "'}";
+        return "{d '" + SQL_DATE_FORMAT.format(toLocalDate(d.getTime())) + "'}";
     }
 
     public static String getSQLDateStr(Calendar c) {
@@ -95,35 +86,48 @@ public class MJdbcTools {
     }
 
     public static String getSQLDateTimeStr(Date d) {
-        LocalDateTime localDateTime = d.toInstant()
-                .atZone(ZoneId.systemDefault())
-                .toLocalDateTime();
-        return "{ts '" + SQL_TIMESTAMP_FORMAT.format(localDateTime) + "'}";
+        return "{ts '" + SQL_TIMESTAMP_FORMAT.format(toLocalDateTime(d.getTime())) + "'}";
     }
 
     public static String getSQLDateTimeStr(java.sql.Timestamp ts) {
-        LocalDateTime localDateTime = ts.toInstant()
-                .atZone(ZoneId.systemDefault())
-                .toLocalDateTime();
-        return "{ts '" + SQL_TIMESTAMP_FORMAT.format(localDateTime) + "'}";
+        return "{ts '" + SQL_TIMESTAMP_FORMAT.format(toLocalDateTime(ts.getTime())) + "'}";
     }
 
     public static String getSQLDateTimeStr(Calendar c) {
         return getSQLDateTimeStr(c.getTime());
     }
 
+    // java.sql.Date and java.sql.Time both throw on toInstant(), so always go through the epoch
+    private static LocalDate toLocalDate(long epochMilli) {
+        return Instant.ofEpochMilli(epochMilli).atZone(ZoneId.systemDefault()).toLocalDate();
+    }
+
+    private static LocalDateTime toLocalDateTime(long epochMilli) {
+        return Instant.ofEpochMilli(epochMilli).atZone(ZoneId.systemDefault()).toLocalDateTime();
+    }
+
+    /**
+     * Returns the SHA-256 digest of the normalised (parsed and re-written) statement as a lower
+     * case hex string, suitable for recognising semantically identical statements.
+     */
     public static String getSQLHash(String sqlStr)
             throws JSQLParserException, NoSuchAlgorithmException {
         MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
-
         net.sf.jsqlparser.statement.Statement statement = CCJSqlParserUtil.parse(sqlStr);
+        messageDigest.update(statement.toString().getBytes(StandardCharsets.UTF_8));
 
-        messageDigest.update(statement.toString().getBytes(Charset.defaultCharset()));
-        String hashStr = new String(messageDigest.digest(), Charset.defaultCharset());
-
-        return hashStr;
+        return toHexString(messageDigest.digest());
     }
 
+    private static String toHexString(byte[] bytes) {
+        StringBuilder builder = new StringBuilder(bytes.length * 2);
+        for (byte b : bytes) {
+            builder.append(HEX[(b >> 4) & 0xF]).append(HEX[b & 0xF]);
+        }
+        return builder.toString();
+    }
+
+    /** Renders a parameter value as a SQL literal, escaping single quotes and ampersands. */
     private static String getParameterStr(Object o) {
         if (o == null) {
             return "NULL";
@@ -132,67 +136,39 @@ public class MJdbcTools {
         } else if (o instanceof Date) {
             Calendar cal = GregorianCalendar.getInstance();
             cal.setTime((Date) o);
-
-            if (cal.get(Calendar.MILLISECOND) == 0
-                    && cal.get(Calendar.SECOND) == 0
-                    && cal.get(Calendar.MINUTE) == 0
-                    && cal.get(Calendar.HOUR_OF_DAY) == 0) {
-                LocalDate localDate = Instant
-                        .ofEpochMilli(((Date) o).getTime())
-                        .atZone(ZoneId.systemDefault())
-                        .toLocalDate();
-
-                return "{d '" + SQL_DATE_FORMAT.format(localDate) + "'}";
-            } else {
-                LocalDateTime localDateTime = ((Date) o).toInstant()
-                        .atZone(ZoneId.systemDefault())
-                        .toLocalDateTime();
-                return "{ts '" + SQL_TIMESTAMP_FORMAT.format(localDateTime) + "'}";
-            }
+            return getTemporalStr(cal);
         } else if (o instanceof Calendar) {
-            Calendar cal = (Calendar) o;
-            if (cal.get(Calendar.MILLISECOND) == 0
-                    && cal.get(Calendar.SECOND) == 0
-                    && cal.get(Calendar.MINUTE) == 0
-                    && cal.get(Calendar.HOUR_OF_DAY) == 0) {
-                LocalDate localDate = Instant
-                        .ofEpochMilli(cal.getTimeInMillis())
-                        .atZone(ZoneId.systemDefault())
-                        .toLocalDate();
-
-                return "{d '" + SQL_DATE_FORMAT.format(localDate) + "'}";
-            } else {
-                LocalDateTime localDateTime = cal.toInstant()
-                        .atZone(ZoneId.systemDefault())
-                        .toLocalDateTime();
-                return "{ts '" + SQL_TIMESTAMP_FORMAT.format(localDateTime) + "'}";
-            }
-        } else if (o instanceof Long) {
-            return ((Long) o).toString();
-        } else if (o instanceof Integer) {
-            return ((Integer) o).toString();
-        } else if (o instanceof Short) {
-            return ((Short) o).toString();
-        } else if (o instanceof Byte) {
-            return ((Byte) o).toString();
-        } else if (o instanceof Double) {
-            return o.toString();
-        } else if (o instanceof Float) {
-            return o.toString();
-        } else if (o instanceof BigInteger) {
-            return o.toString();
-        } else if (o instanceof BigDecimal) {
-            return ((BigDecimal) o).toPlainString();
+            return getTemporalStr((Calendar) o);
+        } else if (o instanceof Number) {
+            return getNumberStr((Number) o);
         } else if (o instanceof Boolean) {
             return (Boolean) o ? "TRUE" : "FALSE";
-        } else if (o instanceof String) {
-            String s = (String) o;
-            s = s.replace("'", "''");
-            s = s.replace("&", "' || chr(38) || '");
-            return "'" + s + "'";
         } else {
-            return "'" + o + "'";
+            return getTextStr(o.toString());
         }
+    }
+
+    /** A date literal when the time of day is exactly midnight, a timestamp literal otherwise. */
+    private static String getTemporalStr(Calendar cal) {
+        boolean midnight = cal.get(Calendar.MILLISECOND) == 0
+                && cal.get(Calendar.SECOND) == 0
+                && cal.get(Calendar.MINUTE) == 0
+                && cal.get(Calendar.HOUR_OF_DAY) == 0;
+
+        return midnight
+                ? "{d '" + SQL_DATE_FORMAT.format(toLocalDate(cal.getTimeInMillis())) + "'}"
+                : "{ts '" + SQL_TIMESTAMP_FORMAT.format(toLocalDateTime(cal.getTimeInMillis()))
+                        + "'}";
+    }
+
+    private static String getNumberStr(Number n) {
+        // avoid the scientific notation of BigDecimal.toString()
+        return n instanceof BigDecimal ? ((BigDecimal) n).toPlainString() : n.toString();
+    }
+
+    private static String getTextStr(String s) {
+        // '&' would otherwise be swallowed as a substitution variable by SQL*Plus and friends
+        return "'" + s.replace("'", "''").replace("&", "' || chr(38) || '") + "'";
     }
 
     /** Result of a streaming parameter scan, see {@link #scanParameters(Reader)}. */
@@ -291,21 +267,25 @@ public class MJdbcTools {
                 names.addAll(getNamedParameters(sqlStr));
             } catch (JSQLParserException | RuntimeException ex) {
                 // grammar does not cover this statement: fall back to the lexical candidates
-                for (String candidate : candidates) {
-                    if (splitter.isPlSqlStatement()
-                            && ("NEW".equalsIgnoreCase(candidate)
-                                    || "OLD".equalsIgnoreCase(candidate))) {
-                        continue;
-                    }
-                    names.add(candidate);
-                }
+                addLexicalCandidates(names, candidates, splitter.isPlSqlStatement());
             }
         }
         return new ParameterScan(statementCount, names, positionalCount);
     }
 
+    private static void addLexicalCandidates(Set<String> names, Set<String> candidates,
+            boolean plsqlStatement) {
+        for (String candidate : candidates) {
+            boolean correlationName = plsqlStatement
+                    && ("NEW".equalsIgnoreCase(candidate) || "OLD".equalsIgnoreCase(candidate));
+            if (!correlationName) {
+                names.add(candidate);
+            }
+        }
+    }
+
     public static String rewriteStatementWithNamedParameters(String sqlStr,
-            Map<String, Object> parameters) throws Exception {
+            Map<String, Object> parameters) throws JSQLParserException {
         net.sf.jsqlparser.statement.Statement statement = CCJSqlParserUtil.parse(sqlStr);
         StringBuilder builder = new StringBuilder();
         ExpressionDeParser expressionDeParser = new ExpressionDeParser() {
@@ -328,7 +308,7 @@ public class MJdbcTools {
     }
 
     public static String rewriteStatementWithNamedParameters(String sqlStr, Object... parameters)
-            throws Exception {
+            throws JSQLParserException {
         net.sf.jsqlparser.statement.Statement statement = CCJSqlParserUtil.parse(sqlStr);
         StringBuilder builder = new StringBuilder();
         ExpressionDeParser expressionDeParser = new ExpressionDeParser() {
@@ -364,56 +344,6 @@ public class MJdbcTools {
         SUM, COUNT
     }
 
-    private static TreeMap<Object, Object> emptyMapFromKeys(TreeSet<Object> keys) {
-        TreeMap<Object, Object> map = new TreeMap<>();
-        for (Object k : keys) {
-            map.put(k, null);
-        }
-        return map;
-    }
-
-    private static class ObjectArrayKey implements Comparable<ObjectArrayKey> {
-        private final Comparable[] keys;
-
-        public ObjectArrayKey(Object[] keys) {
-            this.keys = new Comparable[keys.length];
-            for (int i = 0; i < keys.length; i++) {
-                this.keys[i] = (Comparable<?>) keys[i];
-            }
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            } else if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            ObjectArrayKey that = (ObjectArrayKey) o;
-
-            return Arrays.deepEquals(keys, that.keys);
-        }
-
-        @Override
-        public int hashCode() {
-            return Arrays.hashCode(keys);
-        }
-
-        @Override
-        public int compareTo(ObjectArrayKey other) {
-            // Assuming both arrays have the same length
-            for (int i = 0; i < keys.length; i++) {
-                int elementComparison = keys[i].compareTo(other.keys[i]);
-                if (elementComparison != 0) {
-                    return elementComparison;
-                }
-            }
-
-            // If all elements are equal, the arrays are considered equal
-            return 0;
-        }
-    }
-
     /**
      * The getPivotFromQuery function takes a ResultSet and converts it into a pivot table. The
      * function is designed to create columns for each key of the Category Column and to aggregate
@@ -426,177 +356,14 @@ public class MJdbcTools {
      *        Columns
      * @param categoryFormat Format the key values into column labels
      * @param buildTotals If to insert Total rows below and column on the right side
-     * @param repeatHeader If to insert the header repeatedly before each category
+     * @param repeatHeader If to insert the header repeatedly before each category. <b>Not
+     *        implemented</b>, this argument is currently ignored.
      * @return A 2-dimensional array holding the transformed Column Names and the Data
      */
-    @SuppressWarnings({"PMD.ExcessiveMethodLength"})
     public static Object[][] getPivotFromQuery(ResultSet rs, AggregateFunction function,
             String aggregateColumnName, String categoryColumnName, Format categoryFormat,
             boolean buildTotals, boolean repeatHeader) throws SQLException {
-        ArrayList<String> columnNames = new ArrayList<>();
-        int categoryColumnIndex = -1;
-        Class<?> categoryClass = null;
-        int aggregateColumnIndex = -1;
-        Class<?> aggregateClass = null;
-
-        ResultSetMetaData metaData = rs.getMetaData();
-        int columnCount = metaData.getColumnCount();
-        for (int i = 1; i <= columnCount; i++) {
-            String columnName = metaData.getColumnName(i);
-            if (columnName.equalsIgnoreCase(categoryColumnName)) {
-                try {
-                    categoryColumnIndex = i;
-                    categoryClass = Class.forName(metaData.getColumnClassName(i));
-                } catch (ClassNotFoundException ignore) {
-                    // do nothing
-                }
-            } else if (columnName.equalsIgnoreCase(aggregateColumnName)) {
-                try {
-                    aggregateColumnIndex = i;
-                    aggregateClass = Class.forName(metaData.getColumnClassName(i));
-                } catch (ClassNotFoundException ignore) {
-                    // do nothing
-                }
-            } else {
-                columnNames.add(columnName);
-            }
-        }
-
-        if (categoryClass == null || aggregateClass == null) {
-            throw new RuntimeException("Unable to determine the Aggregate or Category Classes.");
-        }
-
-
-        TreeSet<Object> keys = new TreeSet<>();
-        TreeMap<ObjectArrayKey, TreeMap<Object, Object>> data = new TreeMap<>();
-        ArrayList<Object> columnValues = new ArrayList<>();
-        Object keyValue;
-        Object aggregateValue;
-        while (rs.next()) {
-            columnValues.clear();
-            keyValue = null;
-            aggregateValue = null;
-
-            for (int i = 1; i <= columnCount; i++) {
-                Object value = rs.getObject(i);
-
-                if (i == categoryColumnIndex) {
-                    keyValue = value;
-                    // if we meet the key first time, we need to register it and extend the
-                    // aggregated data maps
-                    if (!keys.contains(keyValue)) {
-                        keys.add(keyValue);
-                        for (TreeMap<Object, Object> aggregatedData : data.values()) {
-                            aggregatedData.put(keyValue, null);
-                        }
-                    }
-                } else if (i == aggregateColumnIndex) {
-                    aggregateValue = value;
-                } else {
-                    columnValues.add(rs.getObject(i));
-                }
-            }
-
-            ObjectArrayKey objectKey = new ObjectArrayKey(columnValues.toArray());
-
-            final TreeMap<Object, Object> rowData =
-                    data.getOrDefault(objectKey, emptyMapFromKeys(keys));
-            if (aggregateClass.equals(BigDecimal.class)) {
-                BigDecimal a = (BigDecimal) rowData.get(keyValue);
-                BigDecimal b = (BigDecimal) aggregateValue;
-
-                if (function == AggregateFunction.SUM) {
-                    if (a == null) {
-                        rowData.put(keyValue, b);
-                    } else if (b != null) {
-                        rowData.put(keyValue, a.add(b));
-                    }
-                } else {
-                    throw new UnsupportedOperationException(
-                            "Only SUM is supported right now, sorry!");
-                }
-            } else {
-                throw new UnsupportedOperationException(
-                        "Only BigDecimals are supported right now, sorry!");
-            }
-
-            data.put(objectKey, rowData);
-        }
-
-        // build the final data cube
-        for (Object k : keys) {
-            columnNames.add(categoryFormat != null ? categoryFormat.format(k) : k.toString());
-        }
-        if (buildTotals) {
-            columnNames.add("Total");
-        }
-
-        ArrayList<Object[]> resultData = new ArrayList<>();
-        BigDecimal[] subTotals = new BigDecimal[keys.size() + 1];
-        Arrays.fill(subTotals, BigDecimal.ZERO);
-
-        int r = 0;
-        Object mainCategory = null;
-        for (Map.Entry<ObjectArrayKey, TreeMap<Object, Object>> e : data.entrySet()) {
-            Object[] rowData = new Object[columnNames.size()];
-
-            int c = 0;
-            for (Object k : e.getKey().keys) {
-                rowData[c] = k;
-                c++;
-            }
-
-            if (buildTotals && !rowData[0].equals(mainCategory)) {
-                if (mainCategory != null) {
-                    Object[] totalRowData = new Object[columnNames.size()];
-                    totalRowData[0] = mainCategory;
-                    totalRowData[e.getKey().keys.length - 2] = "Total";
-
-                    System.arraycopy(subTotals, 0, totalRowData, e.getKey().keys.length,
-                            keys.size() + 1);
-                    resultData.add(totalRowData);
-                    resultData.add(new Object[columnNames.size()]);
-                }
-
-                mainCategory = rowData[0];
-                Arrays.fill(subTotals, BigDecimal.ZERO);
-            }
-
-            BigDecimal rowTotal = BigDecimal.ZERO;
-            int c1 = 0;
-            for (Object k : keys) {
-                rowData[c] = e.getValue().get(k);
-
-                if (buildTotals && rowData[c] != null) {
-                    rowTotal = rowTotal.add((BigDecimal) rowData[c]);
-                    subTotals[c1] = subTotals[c1].add((BigDecimal) rowData[c]);
-                }
-                c++;
-                c1++;
-            }
-            if (buildTotals) {
-                rowData[c] = rowTotal;
-                subTotals[c1] = subTotals[c1].add(rowTotal);
-            }
-
-            resultData.add(rowData);
-            r++;
-
-            // totals after the last row
-            if (buildTotals && r == data.size()) {
-                Object[] totalRowData = new Object[columnNames.size()];
-                totalRowData[0] = mainCategory;
-                totalRowData[e.getKey().keys.length - 2] = "Total";
-                System.arraycopy(subTotals, 0, totalRowData, e.getKey().keys.length,
-                        keys.size() + 1);
-                resultData.add(totalRowData);
-            }
-        }
-
-        return new Object[][] {
-                columnNames.toArray(new String[columnNames.size()]),
-                resultData.toArray(new Object[resultData.size()][])
-        };
+        return new MPivotTable(function, aggregateColumnName, categoryColumnName, categoryFormat,
+                buildTotals).build(rs);
     }
-
 }

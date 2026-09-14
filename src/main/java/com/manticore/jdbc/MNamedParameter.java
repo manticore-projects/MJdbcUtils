@@ -1,11 +1,6 @@
 /**
-<<<<<<< HEAD
  * Copyright (C) 2026 manticore-projects Co. Ltd. <support@manticore-projects.com>
-||||||| 2c8ad14
- * Copyright (C) 2024 manticore-projects Co. Ltd. <support@manticore-projects.com>
-=======
- * Copyright (C) 2025 manticore-projects Co. Ltd. <support@manticore-projects.com>
->>>>>>> 0a4a3a0a1275d08797245be0a224af7fa537d315
+ * SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * <p>
  * This program is free software; you can redistribute it and/or modify it under the terms of the
@@ -26,6 +21,7 @@ package com.manticore.jdbc;
 
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.Locale;
 import java.util.TreeSet;
 
 public class MNamedParameter implements Comparable<MNamedParameter> {
@@ -57,7 +53,8 @@ public class MNamedParameter implements Comparable<MNamedParameter> {
     }
 
     public MNamedParameter(String id, int position) {
-        this.id = id.toUpperCase();
+        // normalise once, so that equals(), hashCode() and compareTo() stay consistent
+        this.id = id.toUpperCase(Locale.ROOT);
         positions.add(position);
     }
 
@@ -67,33 +64,28 @@ public class MNamedParameter implements Comparable<MNamedParameter> {
 
     @Override
     public int compareTo(MNamedParameter o) {
-        return id.compareToIgnoreCase(o.id);
+        return id.compareTo(o.id);
     }
 
     @Override
     public int hashCode() {
-        int hash = 3;
-        hash = 67 * hash + (this.id != null ? this.id.hashCode() : 0);
-        return hash;
+        return 67 * 3 + id.hashCode();
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
             return false;
         }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final MNamedParameter other = (MNamedParameter) obj;
-        return !(this.id == null
-                ? other.id != null
-                : !this.id.equalsIgnoreCase(other.id));
+        return id.equals(((MNamedParameter) obj).id);
     }
 
     @Override
     public String toString() {
-        return this.label != null && this.label.length() > 0 ? this.label : this.id;
+        return this.label != null && !this.label.isEmpty() ? this.label : this.id;
     }
 
 
@@ -135,6 +127,11 @@ public class MNamedParameter implements Comparable<MNamedParameter> {
 
     public TreeSet<Integer> getPositions() {
         return new TreeSet<>(positions);
+    }
+
+    /** The first (1-based) position of this parameter, without copying the whole position set. */
+    public int getFirstPosition() {
+        return positions.first();
     }
 
     public Integer getType() {

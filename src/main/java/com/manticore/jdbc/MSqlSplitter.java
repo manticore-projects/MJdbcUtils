@@ -1,5 +1,6 @@
 /**
  * Copyright (C) 2026 manticore-projects Co. Ltd. <support@manticore-projects.com>
+ * SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * <p>
  * This program is free software; you can redistribute it and/or modify it under the terms of the
@@ -20,11 +21,8 @@ package com.manticore.jdbc;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.PushbackReader;
 import java.io.Reader;
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
-import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -53,28 +51,19 @@ import java.util.Set;
  * <p>
  * Not supported (by design, out of lexer scope): SQL*Plus client directives ({@code SET},
  * {@code PROMPT}, {@code REM}, {@code @}), backslash escapes in literals (MySQL
- * {@code NO_BACKSLASH_ESCAPES} off), and dollar-quote tags longer than {@value #MAX_PUSHBACK}
- * characters.
+ * {@code NO_BACKSLASH_ESCAPES} off), and dollar-quote tags longer than 128 characters.
  */
 public final class MSqlSplitter implements Closeable {
 
-    private static final int MAX_PUSHBACK = 128;
-
-    private final PushbackReader reader;
+    private final SqlScanner scanner;
+    private final PlSqlBlockDetector detector = new PlSqlBlockDetector();
     private final boolean plsqlSlashTermination;
 
     // --- per-statement state ------------------------------------------------------
-    private final StringBuilder sql = new StringBuilder();
     private final LinkedHashSet<String> namedParameters = new LinkedHashSet<>();
-    private int positionalParameterCount = 0;
-    private boolean hasContent = false;
+    private int positionalParameterCount;
+    private boolean hasContent;
 
-    private final ArrayList<String> leadingTokens = new ArrayList<>(5);
-    private final StringBuilder currentToken = new StringBuilder();
-    private Boolean plsqlBlock = null;
-
-    private boolean atLineStart = true;
-    private char prevChar = '\n';
     private boolean firstRead = true;
 
     public MSqlSplitter(Reader reader) {
@@ -82,7 +71,7 @@ public final class MSqlSplitter implements Closeable {
     }
 
     public MSqlSplitter(Reader reader, boolean plsqlSlashTermination) {
-        this.reader = new PushbackReader(reader, MAX_PUSHBACK);
+        this.scanner = new SqlScanner(reader);
         this.plsqlSlashTermination = plsqlSlashTermination;
     }
 
@@ -95,79 +84,18 @@ public final class MSqlSplitter implements Closeable {
         resetStatementState();
 
         int c;
-        while ((c = reader.read()) >= 0) {
-            if (firstRead) {
-                firstRead = false;
-                if (c == '\uFEFF') {
-                    continue; // byte order mark
-                }
+        while ((c = scanner.read()) >= 0) {
+            if (skipByteOrderMark(c)) {
+                continue;
             }
-
-            // lone '/' on a line: SQL*Plus "execute buffer" terminator
-            if (c == '/' && atLineStart && isSlashTerminatorLine()) {
+            if (endsStatement(c)) {
                 if (hasContent) {
                     return emit();
                 }
-                resetStatementState();
+                resetStatementState(); // empty chunk, e.g. ";;" or a stray '/' line
                 continue;
             }
-
-            switch (c) {
-                case ';':
-                    flushToken();
-                    if (isPlSqlBlock()) {
-                        appendCode(';');
-                    } else {
-                        prevChar = ';';
-                        if (hasContent) {
-                            return emit();
-                        }
-                        resetStatementState(); // empty statement, e.g. ";;"
-                    }
-                    break;
-                case '\'':
-                    readSingleQuoted();
-                    break;
-                case '"':
-                    readDoubleQuoted();
-                    break;
-                case '-':
-                    if (peekIs('-')) {
-                        readLineComment();
-                    } else {
-                        appendCode((char) c);
-                    }
-                    break;
-                case '/':
-                    if (peekIs('*')) {
-                        readBlockComment();
-                    } else {
-                        appendCode((char) c);
-                    }
-                    break;
-                case ':':
-                    readColon();
-                    break;
-                case '?':
-                    positionalParameterCount++;
-                    appendCode((char) c);
-                    break;
-                case '$':
-                    if (isIdentifierPart(prevChar) || !tryReadDollarQuoted()) {
-                        appendCode((char) c);
-                    }
-                    break;
-                case 'q':
-                case 'Q':
-                    if (!isIdentifierPart(prevChar) && peekIs('\'')) {
-                        readOracleQuoted((char) c);
-                    } else {
-                        appendCode((char) c);
-                    }
-                    break;
-                default:
-                    appendCode((char) c);
-            }
+            consume(c);
         }
 
         return hasContent ? emit() : null;
@@ -187,322 +115,161 @@ public final class MSqlSplitter implements Closeable {
 
     /** True when the statement last returned by {@link #nextStatement()} was a PL/SQL block. */
     public boolean isPlSqlStatement() {
-        return plsqlBlock != null && plsqlBlock;
+        return detector.isDecidedPlSqlBlock();
     }
 
     @Override
     public void close() throws IOException {
-        reader.close();
+        scanner.close();
     }
 
     // ------------------------------------------------------------------------------
 
+    private boolean skipByteOrderMark(int c) {
+        if (!firstRead) {
+            return false;
+        }
+        firstRead = false;
+        return c == '\uFEFF';
+    }
+
+    /** True when the character terminates the statement and is not part of its text. */
+    private boolean endsStatement(int c) throws IOException {
+        if (c == ';') {
+            detector.flushToken();
+            if (isPlSqlBlock()) {
+                return false; // inner separator of a block; consume() appends it
+            }
+            scanner.noteSeparator(';');
+            return true;
+        }
+        // a lone '/' on a line is the SQL*Plus "execute buffer" terminator
+        return c == '/' && scanner.isAtLineStart() && scanner.isSlashTerminatorLine();
+    }
+
+    /** Dispatches a character that belongs to the statement text. */
+    private void consume(int c) throws IOException {
+        if (consumeComment(c) || consumeQuoted(c)) {
+            return;
+        }
+        if (c == ':') {
+            readColon();
+            return;
+        }
+        if (c == '?') {
+            positionalParameterCount++;
+        }
+        appendCode((char) c);
+    }
+
+    /** Line and block comments: copied verbatim, never counting as statement content. */
+    private boolean consumeComment(int c) throws IOException {
+        if (c == '-' && scanner.peekIs('-')) {
+            scanner.readLineComment();
+            return true;
+        }
+        if (c == '/' && scanner.peekIs('*')) {
+            scanner.readBlockComment();
+            return true;
+        }
+        return false;
+    }
+
+    /** Quoted text in all supported flavours: copied verbatim, counting as statement content. */
+    private boolean consumeQuoted(int c) throws IOException {
+        if (c == '\'') {
+            scanner.readSingleQuoted();
+        } else if (c == '"') {
+            scanner.readDoubleQuoted();
+        } else if (c == '$' || c == 'q' || c == 'Q') {
+            return consumeDialectQuoted(c);
+        } else {
+            return false;
+        }
+        hasContent = true;
+        return true;
+    }
+
+    /**
+     * Oracle {@code q'X..X'} and PostgreSQL {@code $tag$..$tag$} quoting, both needing lookahead.
+     */
+    private boolean consumeDialectQuoted(int c) throws IOException {
+        if (SqlScanner.isIdentifierPart(scanner.prevChar())) {
+            return false; // inside an identifier such as V$SESSION, AQ$_QUEUES$ or MAX_Q
+        }
+        if (c == '$') {
+            if (!scanner.tryReadDollarQuoted()) {
+                return false;
+            }
+        } else if (scanner.peekIs('\'')) {
+            scanner.readOracleQuoted((char) c);
+        } else {
+            return false;
+        }
+        hasContent = true;
+        return true;
+    }
+
     private void resetStatementState() {
-        sql.setLength(0);
+        scanner.reset();
         namedParameters.clear();
         positionalParameterCount = 0;
         hasContent = false;
-        leadingTokens.clear();
-        currentToken.setLength(0);
-        plsqlBlock = null;
+        detector.reset();
     }
 
     private String emit() {
-        return sql.toString().trim();
+        detector.flushToken();
+        // force the decision so that isPlSqlStatement() is also accurate for blocks
+        // that were terminated by '/' or EOF without ever containing a ';'
+        isPlSqlBlock();
+        return scanner.text().trim();
+    }
+
+    private boolean isPlSqlBlock() {
+        return plsqlSlashTermination && detector.isPlSqlBlock();
     }
 
     /** Appends a code character (outside literals and comments), maintaining lexer state. */
     private void appendCode(char c) {
-        sql.append(c);
-        prevChar = c;
-        if (c == '\n' || c == '\r') {
-            atLineStart = true;
-        } else if (!Character.isWhitespace(c)) {
-            atLineStart = false;
+        scanner.appendRaw(c);
+        if (!Character.isWhitespace(c)) {
             hasContent = true;
         }
-        if (isIdentifierPart(c)) {
-            if (leadingTokens.size() < 5) {
-                currentToken.append(c);
-            }
-        } else {
-            flushToken();
-        }
-    }
-
-    /** Appends literal or comment content verbatim, tracking line starts only. */
-    private void appendRaw(char c) {
-        sql.append(c);
-        prevChar = c;
-        if (c == '\n' || c == '\r') {
-            atLineStart = true;
-        } else if (!Character.isWhitespace(c)) {
-            atLineStart = false;
-        }
-    }
-
-    private void flushToken() {
-        if (currentToken.length() > 0 && leadingTokens.size() < 5) {
-            leadingTokens.add(currentToken.toString().toUpperCase(Locale.ROOT));
-        }
-        currentToken.setLength(0);
-    }
-
-    private boolean isPlSqlBlock() {
-        if (!plsqlSlashTermination) {
-            return false;
-        }
-        if (plsqlBlock == null) {
-            plsqlBlock = decidePlSqlBlock();
-        }
-        return plsqlBlock;
-    }
-
-    private boolean decidePlSqlBlock() {
-        if (leadingTokens.isEmpty()) {
-            return false;
-        }
-        String first = leadingTokens.get(0);
-        switch (first) {
-            case "DECLARE":
-                return true;
-            case "BEGIN":
-                // a sole "BEGIN;" is transaction control, not a block
-                return leadingTokens.size() > 1;
-            case "CREATE":
-                int i = 1;
-                if (leadingTokens.size() > 2 && "OR".equals(leadingTokens.get(1))
-                        && "REPLACE".equals(leadingTokens.get(2))) {
-                    i = 3;
-                }
-                if (leadingTokens.size() > i) {
-                    switch (leadingTokens.get(i)) {
-                        case "FUNCTION":
-                        case "PROCEDURE":
-                        case "PACKAGE":
-                        case "TRIGGER":
-                        case "TYPE":
-                        case "LIBRARY":
-                            return true;
-                        default:
-                            return false;
-                    }
-                }
-                return false;
-            default:
-                return false;
-        }
-    }
-
-    /** After a '/' at line start: true when the rest of the line is blank (terminator). */
-    private boolean isSlashTerminatorLine() throws IOException {
-        int c;
-        int consumedWhitespace = 0;
-        char[] buffer = new char[MAX_PUSHBACK];
-        while ((c = reader.read()) >= 0) {
-            if (c == '\n' || c == '\r') {
-                return true; // newline consumed together with the terminator line
-            }
-            if (!Character.isWhitespace((char) c) || consumedWhitespace == buffer.length) {
-                reader.unread(c);
-                reader.unread(buffer, 0, consumedWhitespace);
-                return false;
-            }
-            buffer[consumedWhitespace++] = (char) c;
-        }
-        return true; // EOF right after '/'
-    }
-
-    private boolean peekIs(char expected) throws IOException {
-        int c = reader.read();
-        if (c == expected) {
-            return true;
-        }
-        if (c >= 0) {
-            reader.unread(c);
-        }
-        return false;
-    }
-
-    private void readSingleQuoted() throws IOException {
-        appendRaw('\'');
-        hasContent = true;
-        int c;
-        while ((c = reader.read()) >= 0) {
-            appendRaw((char) c);
-            if (c == '\'') {
-                if (peekIs('\'')) {
-                    appendRaw('\''); // '' escape
-                } else {
-                    break;
-                }
-            }
-        }
-    }
-
-    private void readDoubleQuoted() throws IOException {
-        appendRaw('"');
-        hasContent = true;
-        int c;
-        while ((c = reader.read()) >= 0) {
-            appendRaw((char) c);
-            if (c == '"') {
-                if (peekIs('"')) {
-                    appendRaw('"'); // "" escape
-                } else {
-                    break;
-                }
-            }
-        }
-    }
-
-    /** Oracle alternative quoting: q'X ... X' with paired delimiters for ( ) [ ] { } < >. */
-    private void readOracleQuoted(char q) throws IOException {
-        // the opening '\'' was already consumed by peekIs
-        int delimiter = reader.read();
-        if (delimiter < 0) {
-            appendCode(q);
-            appendRaw('\'');
-            return;
-        }
-        char open = (char) delimiter;
-        char close;
-        switch (open) {
-            case '(':
-                close = ')';
-                break;
-            case '[':
-                close = ']';
-                break;
-            case '{':
-                close = '}';
-                break;
-            case '<':
-                close = '>';
-                break;
-            default:
-                close = open;
-        }
-        appendRaw(q);
-        appendRaw('\'');
-        appendRaw(open);
-        hasContent = true;
-        int c;
-        while ((c = reader.read()) >= 0) {
-            appendRaw((char) c);
-            if (c == close && peekIs('\'')) {
-                appendRaw('\'');
-                break;
-            }
-        }
-    }
-
-    /** PostgreSQL dollar quoting: $tag$ ... $tag$. Returns false when it is not a quote start. */
-    private boolean tryReadDollarQuoted() throws IOException {
-        char[] buffer = new char[MAX_PUSHBACK];
-        int n = 0;
-        int c;
-        while (n < buffer.length && (c = reader.read()) >= 0) {
-            buffer[n++] = (char) c;
-            if (c == '$') {
-                String tag = "$" + new String(buffer, 0, n); // e.g. "$tag$" or "$$"
-                appendRaw('$');
-                for (int i = 0; i < n; i++) {
-                    appendRaw(buffer[i]);
-                }
-                hasContent = true;
-                readUntilTag(tag);
-                return true;
-            }
-            if (!isIdentifierPart((char) c) || Character.isDigit(buffer[0])) {
-                break; // not a valid tag
-            }
-        }
-        reader.unread(buffer, 0, n);
-        return false;
-    }
-
-    private void readUntilTag(String tag) throws IOException {
-        int matched = 0;
-        int c;
-        while ((c = reader.read()) >= 0) {
-            appendRaw((char) c);
-            matched = c == tag.charAt(matched) ? matched + 1 : (c == '$' ? 1 : 0);
-            if (matched == tag.length()) {
-                return;
-            }
-        }
-    }
-
-    private void readLineComment() throws IOException {
-        // the second '-' was already consumed by peekIs
-        appendRaw('-');
-        appendRaw('-');
-        int c;
-        while ((c = reader.read()) >= 0) {
-            appendRaw((char) c);
-            if (c == '\n') {
-                return;
-            }
-        }
-    }
-
-    /** Block comment with nesting support, preserved verbatim (optimizer hints!). */
-    private void readBlockComment() throws IOException {
-        // the '*' was already consumed by peekIs
-        appendRaw('/');
-        appendRaw('*');
-        int depth = 1;
-        int c;
-        while (depth > 0 && (c = reader.read()) >= 0) {
-            appendRaw((char) c);
-            if (c == '*' && peekIs('/')) {
-                appendRaw('/');
-                depth--;
-            } else if (c == '/' && peekIs('*')) {
-                appendRaw('*');
-                depth++;
-            }
-        }
+        detector.accept(c);
     }
 
     /** Distinguishes :name parameters from :: casts and := assignments. */
     private void readColon() throws IOException {
-        int next = reader.read();
-        if (next == ':') {
+        int next = scanner.read();
+        if (next == ':' || next == '=') {
             appendCode(':');
-            appendCode(':');
+            appendCode((char) next);
             return;
         }
-        if (next == '=') {
+        if (next < 0 || !SqlScanner.isIdentifierPart((char) next)) {
             appendCode(':');
-            appendCode('=');
+            scanner.unread(next);
             return;
         }
-        if (next < 0 || !isIdentifierPart((char) next)) {
-            appendCode(':');
-            if (next >= 0) {
-                reader.unread(next);
-            }
-            return;
-        }
-        StringBuilder name = new StringBuilder();
-        name.append((char) next);
+        appendNamedParameter(readIdentifier((char) next));
+    }
+
+    private String readIdentifier(char first) throws IOException {
+        StringBuilder name = new StringBuilder().append(first);
         int c;
-        while ((c = reader.read()) >= 0 && isIdentifierPart((char) c)) {
+        while ((c = scanner.read()) >= 0 && SqlScanner.isIdentifierPart((char) c)) {
             name.append((char) c);
         }
-        if (c >= 0) {
-            reader.unread(c);
-        }
-        namedParameters.add(name.toString());
+        scanner.unread(c);
+        return name.toString();
+    }
+
+    private void appendNamedParameter(String name) {
+        namedParameters.add(name);
         appendCode(':');
         for (int i = 0; i < name.length(); i++) {
             appendCode(name.charAt(i));
         }
-    }
-
-    private static boolean isIdentifierPart(char c) {
-        return Character.isLetterOrDigit(c) || c == '_' || c == '$' || c == '#';
     }
 }
