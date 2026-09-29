@@ -93,8 +93,8 @@ final class PlSqlBlockDetector {
 
     private boolean createsPlSqlObject() {
         int i = leadingTokens.size() > 2
-                        && "OR".equals(leadingTokens.get(1))
-                        && "REPLACE".equals(leadingTokens.get(2)) ? 3 : 1;
+                && "OR".equals(leadingTokens.get(1))
+                && "REPLACE".equals(leadingTokens.get(2)) ? 3 : 1;
 
         return leadingTokens.size() > i && isPlSqlObjectKeyword(leadingTokens.get(i));
     }
