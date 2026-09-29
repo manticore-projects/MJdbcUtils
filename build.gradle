@@ -90,12 +90,8 @@ description = 'Java Library for Named Parameters (e.g. :Customer_Id ) in Queries
 
 java {
     withSourcesJar()
-    // withJavadocJar() -- the Javadoc JAR is built and attached by mavenPublishing below
-    // source 11 / target 17 was inconsistent: the published bytecode is Java 17 and can not be
-    // read by a Java 11 runtime anyway. Set `release` so the compiler also checks the API level.
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
-    // needed for XML-Doclet to work (since Doclet changed again with Java 13)
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(17))
     }

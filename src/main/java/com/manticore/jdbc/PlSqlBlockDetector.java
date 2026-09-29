@@ -82,8 +82,8 @@ final class PlSqlBlockDetector {
             case "DECLARE":
                 return true;
             case "BEGIN":
-                // a sole "BEGIN;" is transaction control, not a block
-                return leadingTokens.size() > 1;
+                // a sole "BEGIN;" and "BEGIN TRANSACTION|WORK|..." are transaction control
+                return leadingTokens.size() > 1 && !isTransactionKeyword(leadingTokens.get(1));
             case "CREATE":
                 return createsPlSqlObject();
             default:
@@ -93,10 +93,24 @@ final class PlSqlBlockDetector {
 
     private boolean createsPlSqlObject() {
         int i = leadingTokens.size() > 2
-                && "OR".equals(leadingTokens.get(1))
-                && "REPLACE".equals(leadingTokens.get(2)) ? 3 : 1;
+                        && "OR".equals(leadingTokens.get(1))
+                        && "REPLACE".equals(leadingTokens.get(2)) ? 3 : 1;
 
         return leadingTokens.size() > i && isPlSqlObjectKeyword(leadingTokens.get(i));
+    }
+
+    /** PostgreSQL, SQL Server and H2 forms of "BEGIN TRANSACTION". */
+    private static boolean isTransactionKeyword(String token) {
+        switch (token) {
+            case "TRAN":
+            case "TRANSACTION":
+            case "WORK":
+            case "ISOLATION":
+            case "DISTRIBUTED":
+                return true;
+            default:
+                return false;
+        }
     }
 
     private static boolean isPlSqlObjectKeyword(String token) {
